@@ -44,6 +44,31 @@ def wgs84_to_web_mercator(lon, lat):
     return x, y
 
 
+def web_mercator_to_wgs84(x, y):
+    """Converts Web Mercator (x, y) to WGS84 (longitude, latitude)"""
+    EARTH_RADIUS = 6378137.0  # Earth's radius (m)
+    lon = np.rad2deg(x / EARTH_RADIUS)
+    lat = np.rad2deg(2.0 * np.arctan(np.exp(y / EARTH_RADIUS)) - np.pi / 2.0)
+    return lon, lat
+
+
+def normalize_longitude_difference(start_lon, end_lon):
+    """
+    Normalize end longitude to be in the same 360-degree range as start longitude.
+    This prevents vectors from wrapping around the world when crossing the date line.
+    """
+    # Calculate the difference
+    diff = end_lon - start_lon
+
+    # If the difference is > 180, we've wrapped around (going the long way)
+    # Adjust by 360 to go the short way
+    diff = np.where(diff > 180, diff - 360, diff)
+    diff = np.where(diff < -180, diff + 360, diff)
+
+    # Return the normalized end longitude
+    return start_lon + diff
+
+
 def wrap2360(lon):
     """Wrap longitude to 0-360 range"""
     lon[np.where(lon < 0.0)] += 360.0
@@ -297,15 +322,359 @@ class MyTrameApp(TrameApp):
 
     def _update_layers(self):
         """Update DeckGL layers based on loaded data and visibility controls"""
-        # TODO: Implement layer creation and updates
-        # This will be implemented in the next phase
-        pass
+        layers = []
+
+        # Process folder 1 data
+        if self.folder_1_data is not None:
+            layers.extend(self._create_layers_for_folder(1, self.folder_1_data))
+
+        # Process folder 2 data
+        if self.folder_2_data is not None:
+            layers.extend(self._create_layers_for_folder(2, self.folder_2_data))
+
+        # Update the deck
+        deck = pdk.Deck(
+            map_provider="mapbox" if HAS_MAPBOX_TOKEN else "carto",
+            map_style="mapbox://styles/mapbox/light-v9" if HAS_MAPBOX_TOKEN else pdk.map_styles.LIGHT,
+            initial_view_state=pdk.ViewState(
+                latitude=self.state.map_latitude,
+                longitude=self.state.map_longitude,
+                zoom=self.state.map_zoom,
+                pitch=self.state.map_pitch,
+                bearing=self.state.map_bearing,
+            ),
+            layers=layers,
+        )
+        self.ctrl.deck_update(deck)
+
+    def _create_layers_for_folder(self, folder_number, data):
+        """Create DeckGL layers for a specific folder's data"""
+        layers = []
+        station = data["station"]
+        x_station = data["x_station"]
+        y_station = data["y_station"]
+
+        # Get visibility state
+        show_locs = self.state[f"show_locs_{folder_number}"]
+        show_obs = self.state[f"show_obs_{folder_number}"]
+        show_mod = self.state[f"show_mod_{folder_number}"]
+        show_res = self.state[f"show_res_{folder_number}"]
+        show_rot = self.state[f"show_rot_{folder_number}"]
+        show_seg = self.state[f"show_seg_{folder_number}"]
+        show_tri = self.state[f"show_tri_{folder_number}"]
+        show_str = self.state[f"show_str_{folder_number}"]
+        show_mog = self.state[f"show_mog_{folder_number}"]
+
+        # Color schemes for different folders
+        colors = {
+            1: [255, 0, 0, 180],      # Red for folder 1
+            2: [0, 0, 255, 180],      # Blue for folder 2
+        }
+        color = colors[folder_number]
+
+        # Station locations (always show if any velocity is shown)
+        if show_locs or show_obs or show_mod or show_res or show_rot or show_seg or show_tri or show_str or show_mog:
+            # Create DataFrame for station points
+            station_df = pd.DataFrame({
+                "lon": station.lon.values,
+                "lat": station.lat.values,
+                "name": station.name.values,
+            })
+
+            layers.append(pdk.Layer(
+                "ScatterplotLayer",
+                data=station_df,
+                get_position=["lon", "lat"],
+                get_fill_color=color,
+                get_radius=3000,
+                radius_min_pixels=2,
+                radius_max_pixels=5,
+                pickable=True,
+                id=f"stations_{folder_number}",
+            ))
+
+        # Observed velocities
+        if show_obs:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            # Velocity data is in mm/yr, VELOCITY_SCALE converts to m/yr
+            # Web Mercator coordinates are in meters
+            x_end = x_station + velocity_scale * station.east_vel.values
+            y_end = y_station + velocity_scale * station.north_vel.values
+
+            # Convert back to lon/lat for DeckGL
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+
+            # Normalize longitude to prevent wrapping issues at date line
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            obs_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=obs_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=color,
+                get_width=2,
+                width_min_pixels=1,
+                id=f"obs_vel_{folder_number}",
+            ))
+
+        # Modeled velocities
+        if show_mod:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel.values
+            y_end = y_station + velocity_scale * station.model_north_vel.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            mod_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=mod_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[color[0], color[1], color[2], 120],  # More transparent
+                get_width=2,
+                width_min_pixels=1,
+                id=f"mod_vel_{folder_number}",
+            ))
+
+        # Residual velocities
+        if show_res:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel_residual.values
+            y_end = y_station + velocity_scale * station.model_north_vel_residual.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            res_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=res_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[128, 0, 128, 180],  # Purple for residuals
+                get_width=2,
+                width_min_pixels=1,
+                id=f"res_vel_{folder_number}",
+            ))
+
+        # Rotation velocities
+        if show_rot:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel_rotation.values
+            y_end = y_station + velocity_scale * station.model_north_vel_rotation.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            rot_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=rot_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[255, 165, 0, 180],  # Orange for rotation
+                get_width=2,
+                width_min_pixels=1,
+                id=f"rot_vel_{folder_number}",
+            ))
+
+        # Segment elastic velocities
+        if show_seg:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_elastic_segment.values
+            y_end = y_station + velocity_scale * station.model_north_elastic_segment.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            seg_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=seg_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[0, 255, 0, 180],  # Green for segments
+                get_width=2,
+                width_min_pixels=1,
+                id=f"seg_vel_{folder_number}",
+            ))
+
+        # TDE velocities
+        if show_tri:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel_tde.values
+            y_end = y_station + velocity_scale * station.model_north_vel_tde.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            tde_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=tde_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[0, 255, 255, 180],  # Cyan for TDE
+                get_width=2,
+                width_min_pixels=1,
+                id=f"tde_vel_{folder_number}",
+            ))
+
+        # Strain rate velocities
+        if show_str:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel_block_strain_rate.values
+            y_end = y_station + velocity_scale * station.model_north_vel_block_strain_rate.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            str_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=str_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[255, 255, 0, 180],  # Yellow for strain
+                get_width=2,
+                width_min_pixels=1,
+                id=f"str_vel_{folder_number}",
+            ))
+
+        # Mogi velocities
+        if show_mog:
+            velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
+            x_end = x_station + velocity_scale * station.model_east_vel_mogi.values
+            y_end = y_station + velocity_scale * station.model_north_vel_mogi.values
+            end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
+            end_lon = normalize_longitude_difference(station.lon.values, end_lon)
+
+            mog_df = pd.DataFrame({
+                "start_lon": station.lon.values,
+                "start_lat": station.lat.values,
+                "end_lon": end_lon,
+                "end_lat": end_lat,
+            })
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=mog_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color=[255, 0, 255, 180],  # Magenta for Mogi
+                get_width=2,
+                width_min_pixels=1,
+                id=f"mog_vel_{folder_number}",
+            ))
+
+        # Fault segments
+        show_seg_color = self.state[f"show_seg_color_{folder_number}"]
+        if show_seg_color:
+            segment = data["segment"]
+            seg_slip_type = self.state[f"seg_slip_type_{folder_number}"]
+
+            # Get slip values based on type (strike-slip or dip-slip)
+            if seg_slip_type == "ss":
+                slip_values = segment.ss_rate.values if "ss_rate" in segment.columns else np.zeros(len(segment))
+            else:  # ds
+                slip_values = segment.ds_rate.values if "ds_rate" in segment.columns else np.zeros(len(segment))
+
+            # Create segment lines with color based on slip rate
+            seg_lines_df = pd.DataFrame({
+                "start_lon": segment.lon1.values,
+                "start_lat": segment.lat1.values,
+                "end_lon": segment.lon2.values,
+                "end_lat": segment.lat2.values,
+                "slip_rate": slip_values,
+            })
+
+            # Normalize slip rate for coloring (-100 to 100 mm/yr)
+            slip_normalized = np.clip(slip_values / 100.0, -1.0, 1.0)
+
+            # Color map: blue (negative) -> white (zero) -> red (positive)
+            def slip_to_color(slip_norm):
+                if slip_norm < 0:
+                    # Blue to white
+                    t = (slip_norm + 1.0)  # 0 to 1
+                    return [int(255 * t), int(255 * t), 255, 200]
+                else:
+                    # White to red
+                    t = slip_norm  # 0 to 1
+                    return [255, int(255 * (1 - t)), int(255 * (1 - t)), 200]
+
+            colors_array = [slip_to_color(s) for s in slip_normalized]
+            seg_lines_df["color"] = colors_array
+
+            layers.append(pdk.Layer(
+                "LineLayer",
+                data=seg_lines_df,
+                get_source_position=["start_lon", "start_lat"],
+                get_target_position=["end_lon", "end_lat"],
+                get_color="color",
+                get_width=3,
+                width_min_pixels=2,
+                pickable=True,
+                id=f"segments_{folder_number}",
+            ))
+
+        return layers
 
     @change("velocity_scale")
     def on_velocity_scale_change(self, velocity_scale, **kwargs):
         """Update velocity vector scaling"""
-        print(f"Velocity scale changed to: {velocity_scale}")
-        # TODO: Update visualization
+        self._update_layers()
+
+    @change(
+        "show_locs_1", "show_obs_1", "show_mod_1", "show_res_1", "show_rot_1",
+        "show_seg_1", "show_tri_1", "show_str_1", "show_mog_1",
+        "show_seg_color_1", "seg_slip_type_1",
+        "show_locs_2", "show_obs_2", "show_mod_2", "show_res_2", "show_rot_2",
+        "show_seg_2", "show_tri_2", "show_str_2", "show_mog_2",
+        "show_seg_color_2", "seg_slip_type_2",
+    )
+    def on_visibility_change(self, **kwargs):
+        """Update visualization when visibility controls change"""
+        self._update_layers()
 
     def _build_ui(self, *args, **kwargs):
         with SinglePageLayout(self.server) as self.ui:
