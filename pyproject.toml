@@ -15,7 +15,7 @@ dependencies = [
     "pandas",
 ]
 requires-python = ">=3.9"
-readme = "README.rst"
+readme = "README.md"
 license = {text = "MIT License"}
 keywords = ["Python", "Interactive", "Web", "Application", "Framework"]
 classifiers = [
@@ -111,6 +111,6 @@ version_variables = [
 
 build_command = "uv build"
 
-[semantic_release.publish]
+[tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
 upload_to_vcs_release = true
