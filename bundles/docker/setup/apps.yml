@@ -1,4 +1,0 @@
-trame: # Default app under /index.html
-  app: fennel
-fennel: # /fennel.html
-  app: fennel
