@@ -73,3 +73,9 @@ nox -s tests
 * [Training](https://www.kitware.com/courses/trame/): Learn how to confidently use trame from the expert developers at Kitware.
 * [Support](https://www.kitware.com/trame/support/): Our experts can assist your team as you build your web application and establish in-house expertise.
 * [Custom Development](https://www.kitware.com/trame/support/): Leverage Kitware's 25+ years of experience to quickly build your web application.
+
+## Commit message convention
+
+Semantic release rely on
+[conventional commits](https://www.conventionalcommits.org/) to generate new
+releases and changelog.
