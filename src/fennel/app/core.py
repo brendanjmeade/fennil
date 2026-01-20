@@ -210,7 +210,7 @@ class MyTrameApp(TrameApp):
         """Load earthquake data from a folder"""
         # TODO: Replace with proper folder selection dialog
         # Hardcoded path for now
-        base_path = Path(__file__).parent.parent.parent.parent / "result_viewer"
+        base_path = Path(__file__).parent.parent.parent.parent / "data"
         folder_name = base_path / "0000000157"
 
         # Update folder display
