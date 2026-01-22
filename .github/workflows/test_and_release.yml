@@ -75,6 +75,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.12"
+          enable-cache: true
+
       - name: Python Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@master
