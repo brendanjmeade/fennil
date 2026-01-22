@@ -1,6 +1,8 @@
-## fennel
+## fennil
 
-Attempt at a much faster rebuild of [`result_manager`](https://github.com/brendanjmeade/result_manager) for larger [`celeri`](https://github.com/brendanjmeade/celeri) models.
+Attempt at a much faster rebuild of
+[`result_manager`](https://github.com/brendanjmeade/result_manager) for larger
+[`celeri`](https://github.com/brendanjmeade/celeri) models.
 
 Viewer for kinematic earthquake simulations
 
@@ -13,32 +15,34 @@ This library is OpenSource and follows the MIT License
 Install the application/library
 
 ```console
-pip install fennel
+pip install fennil
 ```
 
 Run the application
 
 ```console
-fennel
+fennil
 ```
 
 ## Mapbox token
 
-Set a Mapbox access token so base maps render with Mapbox styles. Either export it in your shell or place it in a local `.env` (already gitignored):
+Set a Mapbox access token so base maps render with Mapbox styles. Either export
+it in your shell or place it in a local `.env` (already gitignored):
 
 ```console
-export FENNEL_MAP_BOX_TOKEN="YOUR_TOKEN_HERE"
+export FENNIL_MAP_BOX_TOKEN="YOUR_TOKEN_HERE"
 ```
 
 Or create a `.env` file in the project root containing:
 
 ```
-FENNEL_MAP_BOX_TOKEN=YOUR_TOKEN_HERE
+FENNIL_MAP_BOX_TOKEN=YOUR_TOKEN_HERE
 ```
 
 ## Development setup
 
-We recommend using uv for setting up and managing a virtual environment for your development.
+We recommend using uv for setting up and managing a virtual environment for your
+development.
 
 ```console
 # Create venv and install all dependencies
@@ -70,9 +74,12 @@ nox -s tests
 
 ## Professional Support
 
-* [Training](https://www.kitware.com/courses/trame/): Learn how to confidently use trame from the expert developers at Kitware.
-* [Support](https://www.kitware.com/trame/support/): Our experts can assist your team as you build your web application and establish in-house expertise.
-* [Custom Development](https://www.kitware.com/trame/support/): Leverage Kitware's 25+ years of experience to quickly build your web application.
+- [Training](https://www.kitware.com/courses/trame/): Learn how to confidently
+  use trame from the expert developers at Kitware.
+- [Support](https://www.kitware.com/trame/support/): Our experts can assist your
+  team as you build your web application and establish in-house expertise.
+- [Custom Development](https://www.kitware.com/trame/support/): Leverage
+  Kitware's 25+ years of experience to quickly build your web application.
 
 ## Commit message convention
 

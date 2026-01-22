@@ -1,5 +1,5 @@
 ======================
-Contributing to fennel
+Contributing to fennil
 ======================
 
 #. Clone the repository using ``git clone``

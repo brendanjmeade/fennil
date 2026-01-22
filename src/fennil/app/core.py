@@ -1,20 +1,20 @@
 import os
-import numpy as np
-import pandas as pd
 from pathlib import Path
 
-from trame.app import TrameApp
-from trame.decorators import change, controller
-from trame.ui.vuetify3 import SinglePageLayout
-from trame.widgets import vuetify3, html
+import numpy as np
+import pandas as pd
 
 # Import pydeck and trame-deckgl
 import pydeck as pdk
+from trame.app import TrameApp
+from trame.decorators import change, controller
+from trame.ui.vuetify3 import SinglePageLayout
+from trame.widgets import html, vuetify3
 from trame_deckgl.widgets import deckgl
 
 
 def _load_mapbox_token():
-    token = os.getenv("FENNEL_MAP_BOX_TOKEN")
+    token = os.getenv("FENNIL_MAP_BOX_TOKEN")
     if token:
         return token
     # Fallback: read from a local .env if present
@@ -22,7 +22,7 @@ def _load_mapbox_token():
         env_file = parent / ".env"
         if env_file.is_file():
             for line in env_file.read_text().splitlines():
-                if line.strip().startswith("FENNEL_MAP_BOX_TOKEN="):
+                if line.strip().startswith("FENNIL_MAP_BOX_TOKEN="):
                     return line.split("=", 1)[1].strip()
     return None
 
@@ -72,11 +72,12 @@ LINE_WIDTHS = {1: 1, 2: 2}
 # Coordinate transformation utilities
 # ---------------------------------------------------------
 
+
 def wgs84_to_web_mercator(lon, lat):
     """Converts decimal (longitude, latitude) to Web Mercator (x, y)"""
     EARTH_RADIUS = 6378137.0  # Earth's radius (m)
     x = EARTH_RADIUS * np.deg2rad(lon)
-    y = EARTH_RADIUS * np.log(np.tan((np.pi / 4.0 + np.deg2rad(lat) / 2.0)))
+    y = EARTH_RADIUS * np.log(np.tan(np.pi / 4.0 + np.deg2rad(lat) / 2.0))
     return x, y
 
 
@@ -133,6 +134,7 @@ def cart2sph(x, y, z):
 # ---------------------------------------------------------
 # Main Trame App class
 # ---------------------------------------------------------
+
 
 class MyTrameApp(TrameApp):
     def __init__(self, server=None):
@@ -202,7 +204,7 @@ class MyTrameApp(TrameApp):
         # build ui
         self._build_ui()
 
-    def _initialize_map(self, **kwargs):
+    def _initialize_map(self, **kwargs):  # noqa: ARG002
         """Initialize the map with default view"""
         self.ctrl.deck_update(self._build_deck([]))
 
@@ -229,29 +231,29 @@ class MyTrameApp(TrameApp):
         )
 
         # Convert station coordinates to Web Mercator
-        lon_station = station.lon.values
-        lat_station = station.lat.values
+        lon_station = station.lon.to_numpy()
+        lat_station = station.lat.to_numpy()
         x_station, y_station = wgs84_to_web_mercator(lon_station, lat_station)
 
         # Convert segment coordinates to Web Mercator
-        lon1_seg = segment.lon1.values
-        lat1_seg = segment.lat1.values
-        lon2_seg = segment.lon2.values
-        lat2_seg = segment.lat2.values
+        lon1_seg = segment.lon1.to_numpy()
+        lat1_seg = segment.lat1.to_numpy()
+        lon2_seg = segment.lon2.to_numpy()
+        lat2_seg = segment.lat2.to_numpy()
         x1_seg, y1_seg = wgs84_to_web_mercator(lon1_seg, lat1_seg)
         x2_seg, y2_seg = wgs84_to_web_mercator(lon2_seg, lat2_seg)
 
         # Process meshes (TDE)
-        lon1_mesh = meshes["lon1"].values.copy()
-        lat1_mesh = meshes["lat1"].values
-        dep1_mesh = meshes["dep1"].values
-        lon2_mesh = meshes["lon2"].values.copy()
-        lat2_mesh = meshes["lat2"].values
-        dep2_mesh = meshes["dep2"].values
-        lon3_mesh = meshes["lon3"].values.copy()
-        lat3_mesh = meshes["lat3"].values
-        dep3_mesh = meshes["dep3"].values
-        mesh_idx = meshes["mesh_idx"].values
+        lon1_mesh = meshes["lon1"].to_numpy().copy()
+        lat1_mesh = meshes["lat1"].to_numpy()
+        dep1_mesh = meshes["dep1"].to_numpy()
+        lon2_mesh = meshes["lon2"].to_numpy().copy()
+        lat2_mesh = meshes["lat2"].to_numpy()
+        dep2_mesh = meshes["dep2"].to_numpy()
+        lon3_mesh = meshes["lon3"].to_numpy().copy()
+        lat3_mesh = meshes["lat3"].to_numpy()
+        dep3_mesh = meshes["dep3"].to_numpy()
+        mesh_idx = meshes["mesh_idx"].to_numpy()
 
         # Wrap longitude to 0-360
         lon1_mesh[lon1_mesh < 0] += 360
@@ -259,18 +261,24 @@ class MyTrameApp(TrameApp):
         lon3_mesh[lon3_mesh < 0] += 360
 
         # Calculate element geometry for steep dipping meshes
-        tri_leg1 = np.transpose([
-            np.deg2rad(lon2_mesh - lon1_mesh),
-            np.deg2rad(lat2_mesh - lat1_mesh),
-            (1 + KM2M * dep2_mesh / RADIUS_EARTH) - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
-        ])
-        tri_leg2 = np.transpose([
-            np.deg2rad(lon3_mesh - lon1_mesh),
-            np.deg2rad(lat3_mesh - lat1_mesh),
-            (1 + KM2M * dep3_mesh / RADIUS_EARTH) - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
-        ])
+        tri_leg1 = np.transpose(
+            [
+                np.deg2rad(lon2_mesh - lon1_mesh),
+                np.deg2rad(lat2_mesh - lat1_mesh),
+                (1 + KM2M * dep2_mesh / RADIUS_EARTH)
+                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
+            ]
+        )
+        tri_leg2 = np.transpose(
+            [
+                np.deg2rad(lon3_mesh - lon1_mesh),
+                np.deg2rad(lat3_mesh - lat1_mesh),
+                (1 + KM2M * dep3_mesh / RADIUS_EARTH)
+                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
+            ]
+        )
         norm_vec = np.cross(tri_leg1, tri_leg2)
-        tri_area = np.linalg.norm(norm_vec, axis=1)
+        # tri_area = np.linalg.norm(norm_vec, axis=1)
         azimuth, elevation, r = cart2sph(norm_vec[:, 0], norm_vec[:, 1], norm_vec[:, 2])
         strike = wrap2360(-np.rad2deg(azimuth))
         dip = 90 - np.rad2deg(elevation)
@@ -336,7 +344,7 @@ class MyTrameApp(TrameApp):
         # Update visualization
         self._update_layers()
 
-        print(f"Loaded data from {folder_name}")
+        print(f"Loaded data from {folder_name}")  # noqa: T201
 
     @controller.set("load_folder_1")
     def load_folder_1(self):
@@ -366,7 +374,9 @@ class MyTrameApp(TrameApp):
         """Construct a Deck instance with current map settings and provided layers."""
         return pdk.Deck(
             map_provider="mapbox" if HAS_MAPBOX_TOKEN else "carto",
-            map_style="mapbox://styles/mapbox/light-v9" if HAS_MAPBOX_TOKEN else pdk.map_styles.LIGHT,
+            map_style="mapbox://styles/mapbox/light-v9"
+            if HAS_MAPBOX_TOKEN
+            else pdk.map_styles.LIGHT,
             initial_view_state=pdk.ViewState(
                 latitude=self.state.map_latitude,
                 longitude=self.state.map_longitude,
@@ -401,7 +411,9 @@ class MyTrameApp(TrameApp):
         colors = TYPE_COLORS[folder_number]
         base_width = LINE_WIDTHS[folder_number]
 
-        def add_velocity_layer(layer_id_prefix, east_component, north_component, base_color, line_width):
+        def add_velocity_layer(
+            layer_id_prefix, east_component, north_component, base_color, line_width
+        ):
             """Add base and -360 shifted velocity line layers using the same color."""
             velocity_scale = self.state.velocity_scale * VELOCITY_SCALE
             x_end = x_station + velocity_scale * east_component
@@ -409,61 +421,73 @@ class MyTrameApp(TrameApp):
             end_lon, end_lat = web_mercator_to_wgs84(x_end, y_end)
             end_lon = normalize_longitude_difference(station.lon.values, end_lon)
 
-            base_df = pd.DataFrame({
-                "start_lon": station.lon.values,
-                "start_lat": station.lat.values,
-                "end_lon": end_lon,
-                "end_lat": end_lat,
-            })
+            base_df = pd.DataFrame(
+                {
+                    "start_lon": station.lon.to_numpy(),
+                    "start_lat": station.lat.to_numpy(),
+                    "end_lon": end_lon,
+                    "end_lat": end_lat,
+                }
+            )
 
-            shift_df = pd.DataFrame({
-                "start_lon": station.lon.values - 360,
-                "start_lat": station.lat.values,
-                "end_lon": end_lon - 360,
-                "end_lat": end_lat,
-            })
+            shift_df = pd.DataFrame(
+                {
+                    "start_lon": station.lon.to_numpy() - 360,
+                    "start_lat": station.lat.to_numpy(),
+                    "end_lon": end_lon - 360,
+                    "end_lat": end_lat,
+                }
+            )
 
-            layers.append(pdk.Layer(
-                "LineLayer",
-                data=base_df,
-                get_source_position=["start_lon", "start_lat"],
-                get_target_position=["end_lon", "end_lat"],
-                get_color=base_color,
-                get_width=line_width,
-                width_min_pixels=1,
-                id=f"{layer_id_prefix}_{folder_number}",
-            ))
+            layers.append(
+                pdk.Layer(
+                    "LineLayer",
+                    data=base_df,
+                    get_source_position=["start_lon", "start_lat"],
+                    get_target_position=["end_lon", "end_lat"],
+                    get_color=base_color,
+                    get_width=line_width,
+                    width_min_pixels=1,
+                    id=f"{layer_id_prefix}_{folder_number}",
+                )
+            )
 
-            layers.append(pdk.Layer(
-                "LineLayer",
-                data=shift_df,
-                get_source_position=["start_lon", "start_lat"],
-                get_target_position=["end_lon", "end_lat"],
-                get_color=base_color,
-                get_width=line_width,
-                width_min_pixels=1,
-                id=f"{layer_id_prefix}_shift_{folder_number}",
-            ))
+            layers.append(
+                pdk.Layer(
+                    "LineLayer",
+                    data=shift_df,
+                    get_source_position=["start_lon", "start_lat"],
+                    get_target_position=["end_lon", "end_lat"],
+                    get_color=base_color,
+                    get_width=line_width,
+                    width_min_pixels=1,
+                    id=f"{layer_id_prefix}_shift_{folder_number}",
+                )
+            )
 
         # Station locations (only when explicitly requested)
         if self.state[f"show_locs_{folder_number}"]:
-            station_df = pd.DataFrame({
-                "lon": station.lon.values,
-                "lat": station.lat.values,
-                "name": station.name.values,
-            })
+            station_df = pd.DataFrame(
+                {
+                    "lon": station.lon.to_numpy(),
+                    "lat": station.lat.to_numpy(),
+                    "name": station.name.to_numpy(),
+                }
+            )
 
-            layers.append(pdk.Layer(
-                "ScatterplotLayer",
-                data=station_df,
-                get_position=["lon", "lat"],
-                get_fill_color=colors["loc"],
-                get_radius=3000,
-                radius_min_pixels=2,
-                radius_max_pixels=5,
-                pickable=True,
-                id=f"stations_{folder_number}",
-            ))
+            layers.append(
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=station_df,
+                    get_position=["lon", "lat"],
+                    get_fill_color=colors["loc"],
+                    get_radius=3000,
+                    radius_min_pixels=2,
+                    radius_max_pixels=5,
+                    pickable=True,
+                    id=f"stations_{folder_number}",
+                )
+            )
 
         # Observed velocities
         if vis["show_obs"]:
@@ -554,18 +578,28 @@ class MyTrameApp(TrameApp):
 
             # Get slip values based on type (strike-slip or dip-slip)
             if seg_slip_type == "ss":
-                slip_values = segment.ss_rate.values if "ss_rate" in segment.columns else np.zeros(len(segment))
+                slip_values = (
+                    segment.ss_rate.to_numpy()
+                    if "ss_rate" in segment.columns
+                    else np.zeros(len(segment))
+                )
             else:  # ds
-                slip_values = segment.ds_rate.values if "ds_rate" in segment.columns else np.zeros(len(segment))
+                slip_values = (
+                    segment.ds_rate.to_numpy()
+                    if "ds_rate" in segment.columns
+                    else np.zeros(len(segment))
+                )
 
             # Create segment lines with color based on slip rate
-            seg_lines_df = pd.DataFrame({
-                "start_lon": segment.lon1.values,
-                "start_lat": segment.lat1.values,
-                "end_lon": segment.lon2.values,
-                "end_lat": segment.lat2.values,
-                "slip_rate": slip_values,
-            })
+            seg_lines_df = pd.DataFrame(
+                {
+                    "start_lon": segment.lon1.to_numpy(),
+                    "start_lat": segment.lat1.to_numpy(),
+                    "end_lon": segment.lon2.to_numpy(),
+                    "end_lat": segment.lat2.to_numpy(),
+                    "slip_rate": slip_values,
+                }
+            )
 
             # Normalize slip rate for coloring (-100 to 100 mm/yr)
             slip_normalized = np.clip(slip_values / 100.0, -1.0, 1.0)
@@ -574,60 +608,82 @@ class MyTrameApp(TrameApp):
             def slip_to_color(slip_norm):
                 if slip_norm < 0:
                     # Blue to white
-                    t = (slip_norm + 1.0)  # 0 to 1
+                    t = slip_norm + 1.0  # 0 to 1
                     return [int(255 * t), int(255 * t), 255, 200]
-                else:
-                    # White to red
-                    t = slip_norm  # 0 to 1
-                    return [255, int(255 * (1 - t)), int(255 * (1 - t)), 200]
+                # White to red
+                t = slip_norm  # 0 to 1
+                return [255, int(255 * (1 - t)), int(255 * (1 - t)), 200]
 
             colors_array = [slip_to_color(s) for s in slip_normalized]
             seg_lines_df["color"] = colors_array
 
-            layers.append(pdk.Layer(
-                "LineLayer",
-                data=seg_lines_df,
-                get_source_position=["start_lon", "start_lat"],
-                get_target_position=["end_lon", "end_lat"],
-                get_color="color",
-                get_width=3,
-                width_min_pixels=2,
-                pickable=True,
-                id=f"segments_{folder_number}",
-            ))
+            layers.append(
+                pdk.Layer(
+                    "LineLayer",
+                    data=seg_lines_df,
+                    get_source_position=["start_lon", "start_lat"],
+                    get_target_position=["end_lon", "end_lat"],
+                    get_color="color",
+                    get_width=3,
+                    width_min_pixels=2,
+                    pickable=True,
+                    id=f"segments_{folder_number}",
+                )
+            )
 
         return layers
 
     @change("velocity_scale")
-    def on_velocity_scale_change(self, velocity_scale, **kwargs):
+    def on_velocity_scale_change(self, velocity_scale, **kwargs):  # noqa: ARG002
         """Update velocity vector scaling"""
         self._update_layers()
 
     @change(
-        "show_locs_1", "show_obs_1", "show_mod_1", "show_res_1", "show_rot_1",
-        "show_seg_1", "show_tri_1", "show_str_1", "show_mog_1",
-        "show_seg_color_1", "seg_slip_type_1",
-        "show_locs_2", "show_obs_2", "show_mod_2", "show_res_2", "show_rot_2",
-        "show_seg_2", "show_tri_2", "show_str_2", "show_mog_2",
-        "show_seg_color_2", "seg_slip_type_2",
+        "show_locs_1",
+        "show_obs_1",
+        "show_mod_1",
+        "show_res_1",
+        "show_rot_1",
+        "show_seg_1",
+        "show_tri_1",
+        "show_str_1",
+        "show_mog_1",
+        "show_seg_color_1",
+        "seg_slip_type_1",
+        "show_locs_2",
+        "show_obs_2",
+        "show_mod_2",
+        "show_res_2",
+        "show_rot_2",
+        "show_seg_2",
+        "show_tri_2",
+        "show_str_2",
+        "show_mog_2",
+        "show_seg_color_2",
+        "seg_slip_type_2",
     )
-    def on_visibility_change(self, **kwargs):
+    def on_visibility_change(self, **kwargs):  # noqa: ARG002
         """Update visualization when visibility controls change"""
         self._update_layers()
 
-    def _build_ui(self, *args, **kwargs):
+    def _build_ui(self, *args, **kwargs):  # noqa: ARG002
         with SinglePageLayout(self.server) as self.ui:
             # Toolbar
             self.ui.title.set_text("Earthquake Data Viewer")
 
             # Main content - recreating Panel GridSpec layout
             with self.ui.content:
-                with vuetify3.VContainer(fluid=True, classes="pa-0 fill-height", style="max-height: 700px;"):
+                with vuetify3.VContainer(
+                    fluid=True, classes="pa-0 fill-height", style="max-height: 700px;"
+                ):
                     # Main grid: 2 control columns + 1 large map area
                     with vuetify3.VRow(classes="fill-height", no_gutters=True):
-
                         # LEFT COLUMN - Folder 1 Controls (grid col 0, rows 0-6)
-                        with vuetify3.VCol(cols=1, classes="pa-2 d-flex flex-column", style="overflow-y: auto;"):
+                        with vuetify3.VCol(
+                            cols=1,
+                            classes="pa-2 d-flex flex-column",
+                            style="overflow-y: auto;",
+                        ):
                             # Row 0-1: Load button and velocity controls
                             vuetify3.VBtn(
                                 "load",
@@ -636,7 +692,11 @@ class MyTrameApp(TrameApp):
                                 block=True,
                                 size="small",
                             )
-                            html.Div("{{ folder_1_path }}", classes="text-caption mt-1 mb-2", style="font-size: 0.7rem;")
+                            html.Div(
+                                "{{ folder_1_path }}",
+                                classes="text-caption mt-1 mb-2",
+                                style="font-size: 0.7rem;",
+                            )
 
                             # Velocity checkboxes
                             vuetify3.VCheckbox(
@@ -761,7 +821,11 @@ class MyTrameApp(TrameApp):
                             )
 
                         # MIDDLE COLUMN - Folder 2 Controls (grid col 1, rows 0-6)
-                        with vuetify3.VCol(cols=1, classes="pa-2 d-flex flex-column", style="overflow-y: auto;"):
+                        with vuetify3.VCol(
+                            cols=1,
+                            classes="pa-2 d-flex flex-column",
+                            style="overflow-y: auto;",
+                        ):
                             # Row 0-1: Load button and velocity controls
                             vuetify3.VBtn(
                                 "load",
@@ -770,7 +834,11 @@ class MyTrameApp(TrameApp):
                                 block=True,
                                 size="small",
                             )
-                            html.Div("{{ folder_2_path }}", classes="text-caption mt-1 mb-2", style="font-size: 0.7rem;")
+                            html.Div(
+                                "{{ folder_2_path }}",
+                                classes="text-caption mt-1 mb-2",
+                                style="font-size: 0.7rem;",
+                            )
 
                             # Velocity checkboxes
                             vuetify3.VCheckbox(
@@ -877,10 +945,15 @@ class MyTrameApp(TrameApp):
                         # RIGHT LARGE AREA - Map and Colorbars (grid cols 2-10, rows 0-8)
                         with vuetify3.VCol(cols=10, classes="pa-0 d-flex flex-column"):
                             # Main map area (rows 0-8)
-                            with vuetify3.VCard(classes="flex-grow-1", style="min-height: 0; position: relative;"):
+                            with vuetify3.VCard(
+                                classes="flex-grow-1",
+                                style="min-height: 0; position: relative;",
+                            ):
                                 # DeckGL Map
                                 deck_map = deckgl.Deck(
-                                    mapbox_api_key=mapbox_access_token if HAS_MAPBOX_TOKEN else "",
+                                    mapbox_api_key=mapbox_access_token
+                                    if HAS_MAPBOX_TOKEN
+                                    else "",
                                     style="width: 100%; height: 100%;",
                                     classes="fill-height",
                                 )
@@ -888,11 +961,17 @@ class MyTrameApp(TrameApp):
 
                                 # Initialize map after UI is built
                                 if not self._ready_registered:
-                                    self.server.controller.on_server_ready.add(self._initialize_map)
+                                    self.server.controller.on_server_ready.add(
+                                        self._initialize_map
+                                    )
                                     self._ready_registered = True
 
                             # Colorbar area (row 8)
-                            with vuetify3.VCard(classes="pa-2 d-flex justify-space-around align-center", height="50", flat=True):
+                            with vuetify3.VCard(
+                                classes="pa-2 d-flex justify-space-around align-center",
+                                height="50",
+                                flat=True,
+                            ):
                                 # Slip rate colorbar placeholder
                                 html.Div(
                                     "Slip rate (mm/yr): -100 ←→ +100",

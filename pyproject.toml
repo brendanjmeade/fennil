@@ -1,5 +1,5 @@
 [project]
-name = "fennel"
+name = "fennil"
 version = "1.0.0"
 description = "Viewer for kinematic earthquake simulations"
 authors = [
@@ -45,7 +45,7 @@ dev = [
 ]
 
 [project.scripts]
-fennel = "fennel.app:main"
+fennil = "fennil.app:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -54,14 +54,14 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 include = [
-  "/src/fennel/**/*.py",
-  "/src/fennel/**/*.js",
-  "/src/fennel/**/*.css",
+  "/src/fennil/**/*.py",
+  "/src/fennil/**/*.js",
+  "/src/fennil/**/*.css",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "src/fennel",
+    "src/fennil",
 ]
 
 [tool.ruff]
@@ -106,7 +106,7 @@ version_toml = [
     "pyproject.toml:project.version",
 ]
 version_variables = [
-    "src/fennel/__init__.py:__version__",
+    "src/fennil/__init__.py:__version__",
 ]
 
 build_command = "uv build"
