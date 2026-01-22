@@ -21,7 +21,9 @@ repos:
       - id: check-yaml
       - id: debug-statements
       - id: end-of-file-fixer
+        exclude: ^data/
       - id: mixed-line-ending
+        exclude: ^data/
       - id: name-tests-test
         args: ["--pytest-test-first"]
       - id: requirements-txt-fixer
@@ -40,6 +42,7 @@ repos:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
         args: [--prose-wrap=always]
+        exclude: ^data/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: "v0.9.1"
