@@ -111,8 +111,6 @@ version_variables = [
     "src/fennil/__init__.py:__version__",
 ]
 
-build_command = "uv build"
-
 [tool.semantic_release.publish]
 dist_glob_patterns = ["dist/*"]
 upload_to_vcs_release = true
