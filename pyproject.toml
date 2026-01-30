@@ -1,6 +1,6 @@
 [project]
 name = "fennil"
-version = "1.0.0"
+version = "1.1.0"
 description = "Viewer for kinematic earthquake simulations"
 authors = [
     {name = "Brendan Meade", email = "brendanjmeade@gmail.com"},
