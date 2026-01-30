@@ -36,6 +36,7 @@ HAS_MAPBOX_TOKEN = bool(mapbox_access_token)
 # ---------------------------------------------------------
 
 VELOCITY_SCALE = 1000
+VELOCITY_SCALE_MIN = 1.0e-6
 KM2M = 1.0e3
 RADIUS_EARTH = 6371000
 
@@ -146,7 +147,10 @@ class MyTrameApp(TrameApp):
 
         # Initialize state variables
         self.state.trame__title = "Earthquake Data Viewer"
-        self.state.velocity_scale = 1
+        self.state.velocity_scale = 1.0
+        self.state.velocity_scale_display = self._format_velocity_scale(
+            self.state.velocity_scale
+        )
         self.state.folder_1_path = "---"
         self.state.folder_2_path = "---"
 
@@ -636,7 +640,77 @@ class MyTrameApp(TrameApp):
     @change("velocity_scale")
     def on_velocity_scale_change(self, velocity_scale, **kwargs):  # noqa: ARG002
         """Update velocity vector scaling"""
+        try:
+            value = float(velocity_scale)
+        except (TypeError, ValueError):
+            self.state.velocity_scale = 1.0
+            self._update_layers()
+            return
+        if not np.isfinite(value):
+            self.state.velocity_scale = 1.0
+            self._update_layers()
+            return
+        if value < VELOCITY_SCALE_MIN:
+            self.state.velocity_scale = VELOCITY_SCALE_MIN
+        elif value != velocity_scale:
+            self.state.velocity_scale = value
+        self.state.velocity_scale_display = self._format_velocity_scale(
+            self.state.velocity_scale
+        )
         self._update_layers()
+
+    @change("velocity_scale_display")
+    def on_velocity_scale_display_change(self, velocity_scale_display, **kwargs):  # noqa: ARG002
+        """Parse display text and update velocity scale."""
+        if velocity_scale_display in (None, ""):
+            return
+        try:
+            value = float(velocity_scale_display)
+        except (TypeError, ValueError):
+            return
+        if not np.isfinite(value):
+            return
+        value = max(value, VELOCITY_SCALE_MIN)
+        if abs(value - self.state.velocity_scale) < 1.0e-12:
+            return
+        self.state.velocity_scale = value
+
+    def _set_velocity_scale(self, value):
+        if value is None:
+            return
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return
+        if not np.isfinite(value):
+            return
+        self.state.velocity_scale = max(value, VELOCITY_SCALE_MIN)
+
+    @staticmethod
+    def _format_velocity_scale(value):
+        text = f"{value:.6f}"
+        text = text.rstrip("0").rstrip(".")
+        return text or "0"
+
+    @controller.set("velocity_scale_reset")
+    def velocity_scale_reset(self):
+        self._set_velocity_scale(1.0)
+
+    @controller.set("velocity_scale_fine_down")
+    def velocity_scale_fine_down(self):
+        self._set_velocity_scale(self.state.velocity_scale * 0.9)
+
+    @controller.set("velocity_scale_fine_up")
+    def velocity_scale_fine_up(self):
+        self._set_velocity_scale(self.state.velocity_scale * 1.1)
+
+    @controller.set("velocity_scale_mag_down")
+    def velocity_scale_mag_down(self):
+        self._set_velocity_scale(self.state.velocity_scale / 10.0)
+
+    @controller.set("velocity_scale_mag_up")
+    def velocity_scale_mag_up(self):
+        self._set_velocity_scale(self.state.velocity_scale * 10.0)
 
     @change(
         "show_locs_1",
@@ -676,274 +750,314 @@ class MyTrameApp(TrameApp):
                 with vuetify3.VContainer(
                     fluid=True, classes="pa-0 fill-height", style="max-height: 700px;"
                 ):
-                    # Main grid: 2 control columns + 1 large map area
+                    # Main grid: controls area + large map area
                     with vuetify3.VRow(classes="fill-height", no_gutters=True):
-                        # LEFT COLUMN - Folder 1 Controls (grid col 0, rows 0-6)
-                        with vuetify3.VCol(
-                            cols=1,
-                            classes="pa-2 d-flex flex-column",
-                            style="overflow-y: auto;",
-                        ):
-                            # Row 0-1: Load button and velocity controls
-                            vuetify3.VBtn(
-                                "load",
-                                click=self.load_folder_1,
-                                color="success",
-                                block=True,
-                                size="small",
-                            )
-                            html.Div(
-                                "{{ folder_1_path }}",
-                                classes="text-caption mt-1 mb-2",
-                                style="font-size: 0.7rem;",
-                            )
+                        # LEFT AREA - Controls (two columns + shared row)
+                        with vuetify3.VCol(cols=3, classes="pa-0 d-flex flex-column"):
+                            with vuetify3.VRow(classes="flex-grow-1", no_gutters=True):
+                                # Folder 1 controls (left half)
+                                with vuetify3.VCol(
+                                    cols=6,
+                                    classes="pa-2 d-flex flex-column",
+                                    style="overflow-y: auto;",
+                                ):
+                                    # Row 0-1: Load button and velocity controls
+                                    vuetify3.VBtn(
+                                        "load",
+                                        click=self.load_folder_1,
+                                        color="success",
+                                        block=True,
+                                        size="small",
+                                    )
+                                    html.Div(
+                                        "{{ folder_1_path }}",
+                                        classes="text-caption mt-1 mb-2",
+                                        style="font-size: 0.7rem;",
+                                    )
 
-                            # Velocity checkboxes
-                            vuetify3.VCheckbox(
-                                v_model="show_locs_1",
-                                label="locs",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_obs_1",
-                                label="obs",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_mod_1",
-                                label="mod",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_res_1",
-                                label="res",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_rot_1",
-                                label="rot",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_seg_1",
-                                label="seg",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_tri_1",
-                                label="tri",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_str_1",
-                                label="str",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_mog_1",
-                                label="mog",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_res_mag_1",
-                                label="res mag",
-                                hide_details=True,
-                                density="compact",
-                            )
+                                    # Velocity checkboxes
+                                    vuetify3.VCheckbox(
+                                        v_model="show_locs_1",
+                                        label="locs",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_obs_1",
+                                        label="obs",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_mod_1",
+                                        label="mod",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_res_1",
+                                        label="res",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_rot_1",
+                                        label="rot",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_seg_1",
+                                        label="seg",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_tri_1",
+                                        label="tri",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_str_1",
+                                        label="str",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_mog_1",
+                                        label="mog",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_res_mag_1",
+                                        label="res mag",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
 
-                            vuetify3.VDivider(classes="my-2")
+                                    vuetify3.VDivider(classes="my-2")
 
-                            # Row 5: Residual comparison and velocity scale
-                            vuetify3.VCheckbox(
-                                v_model="show_res_compare",
-                                label="res compare",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VSlider(
-                                v_model=("velocity_scale", 1),
-                                label="vel scale",
-                                min=0,
-                                max=50,
-                                step=1,
-                                thumb_label=True,
-                                density="compact",
-                                hide_details=True,
-                            )
+                                    # Row 6: Segment/TDE color controls
+                                    vuetify3.VCheckbox(
+                                        v_model="show_seg_color_1",
+                                        label="slip",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    with vuetify3.VBtnToggle(
+                                        v_model="seg_slip_type_1",
+                                        mandatory=True,
+                                        density="compact",
+                                        divided=True,
+                                    ):
+                                        vuetify3.VBtn("ss", value="ss", size="x-small")
+                                        vuetify3.VBtn("ds", value="ds", size="x-small")
 
-                            vuetify3.VDivider(classes="my-2")
+                                    vuetify3.VCheckbox(
+                                        v_model="show_tde_1",
+                                        label="tde",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    with vuetify3.VBtnToggle(
+                                        v_model="tde_slip_type_1",
+                                        mandatory=True,
+                                        density="compact",
+                                        divided=True,
+                                    ):
+                                        vuetify3.VBtn("ss", value="ss", size="x-small")
+                                        vuetify3.VBtn("ds", value="ds", size="x-small")
 
-                            # Row 6: Segment/TDE color controls
-                            vuetify3.VCheckbox(
-                                v_model="show_seg_color_1",
-                                label="slip",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            with vuetify3.VBtnToggle(
-                                v_model="seg_slip_type_1",
-                                mandatory=True,
-                                density="compact",
-                                divided=True,
-                            ):
-                                vuetify3.VBtn("ss", value="ss", size="x-small")
-                                vuetify3.VBtn("ds", value="ds", size="x-small")
+                                    vuetify3.VCheckbox(
+                                        v_model="show_fault_proj_1",
+                                        label="fault proj",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
 
-                            vuetify3.VCheckbox(
-                                v_model="show_tde_1",
-                                label="tde",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            with vuetify3.VBtnToggle(
-                                v_model="tde_slip_type_1",
-                                mandatory=True,
-                                density="compact",
-                                divided=True,
-                            ):
-                                vuetify3.VBtn("ss", value="ss", size="x-small")
-                                vuetify3.VBtn("ds", value="ds", size="x-small")
+                                # Folder 2 controls (right half)
+                                with vuetify3.VCol(
+                                    cols=6,
+                                    classes="pa-2 d-flex flex-column",
+                                    style="overflow-y: auto;",
+                                ):
+                                    # Row 0-1: Load button and velocity controls
+                                    vuetify3.VBtn(
+                                        "load",
+                                        click=self.load_folder_2,
+                                        color="success",
+                                        block=True,
+                                        size="small",
+                                    )
+                                    html.Div(
+                                        "{{ folder_2_path }}",
+                                        classes="text-caption mt-1 mb-2",
+                                        style="font-size: 0.7rem;",
+                                    )
 
-                            vuetify3.VCheckbox(
-                                v_model="show_fault_proj_1",
-                                label="fault proj",
-                                hide_details=True,
-                                density="compact",
-                            )
+                                    # Velocity checkboxes
+                                    vuetify3.VCheckbox(
+                                        v_model="show_locs_2",
+                                        label="locs",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_obs_2",
+                                        label="obs",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_mod_2",
+                                        label="mod",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_res_2",
+                                        label="res",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_rot_2",
+                                        label="rot",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_seg_2",
+                                        label="seg",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_tri_2",
+                                        label="tri",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_str_2",
+                                        label="str",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_mog_2",
+                                        label="mog",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    vuetify3.VCheckbox(
+                                        v_model="show_res_mag_2",
+                                        label="res mag",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
 
-                        # MIDDLE COLUMN - Folder 2 Controls (grid col 1, rows 0-6)
-                        with vuetify3.VCol(
-                            cols=1,
-                            classes="pa-2 d-flex flex-column",
-                            style="overflow-y: auto;",
-                        ):
-                            # Row 0-1: Load button and velocity controls
-                            vuetify3.VBtn(
-                                "load",
-                                click=self.load_folder_2,
-                                color="success",
-                                block=True,
-                                size="small",
-                            )
-                            html.Div(
-                                "{{ folder_2_path }}",
-                                classes="text-caption mt-1 mb-2",
-                                style="font-size: 0.7rem;",
-                            )
+                                    vuetify3.VDivider(classes="my-2")
 
-                            # Velocity checkboxes
-                            vuetify3.VCheckbox(
-                                v_model="show_locs_2",
-                                label="locs",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_obs_2",
-                                label="obs",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_mod_2",
-                                label="mod",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_res_2",
-                                label="res",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_rot_2",
-                                label="rot",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_seg_2",
-                                label="seg",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_tri_2",
-                                label="tri",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_str_2",
-                                label="str",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_mog_2",
-                                label="mog",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            vuetify3.VCheckbox(
-                                v_model="show_res_mag_2",
-                                label="res mag",
-                                hide_details=True,
-                                density="compact",
-                            )
+                                    # Row 6: Segment/TDE color controls
+                                    vuetify3.VCheckbox(
+                                        v_model="show_seg_color_2",
+                                        label="slip",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    with vuetify3.VBtnToggle(
+                                        v_model="seg_slip_type_2",
+                                        mandatory=True,
+                                        density="compact",
+                                        divided=True,
+                                    ):
+                                        vuetify3.VBtn("ss", value="ss", size="x-small")
+                                        vuetify3.VBtn("ds", value="ds", size="x-small")
 
-                            vuetify3.VDivider(classes="my-2")
+                                    vuetify3.VCheckbox(
+                                        v_model="show_tde_2",
+                                        label="tde",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
+                                    with vuetify3.VBtnToggle(
+                                        v_model="tde_slip_type_2",
+                                        mandatory=True,
+                                        density="compact",
+                                        divided=True,
+                                    ):
+                                        vuetify3.VBtn("ss", value="ss", size="x-small")
+                                        vuetify3.VBtn("ds", value="ds", size="x-small")
 
-                            # Row 6: Segment/TDE color controls
-                            vuetify3.VCheckbox(
-                                v_model="show_seg_color_2",
-                                label="slip",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            with vuetify3.VBtnToggle(
-                                v_model="seg_slip_type_2",
-                                mandatory=True,
-                                density="compact",
-                                divided=True,
-                            ):
-                                vuetify3.VBtn("ss", value="ss", size="x-small")
-                                vuetify3.VBtn("ds", value="ds", size="x-small")
+                                    vuetify3.VCheckbox(
+                                        v_model="show_fault_proj_2",
+                                        label="fault proj",
+                                        hide_details=True,
+                                        density="compact",
+                                    )
 
-                            vuetify3.VCheckbox(
-                                v_model="show_tde_2",
-                                label="tde",
-                                hide_details=True,
-                                density="compact",
-                            )
-                            with vuetify3.VBtnToggle(
-                                v_model="tde_slip_type_2",
-                                mandatory=True,
-                                density="compact",
-                                divided=True,
-                            ):
-                                vuetify3.VBtn("ss", value="ss", size="x-small")
-                                vuetify3.VBtn("ds", value="ds", size="x-small")
+                            vuetify3.VDivider(classes="my-1")
 
-                            vuetify3.VCheckbox(
-                                v_model="show_fault_proj_2",
-                                label="fault proj",
-                                hide_details=True,
-                                density="compact",
-                            )
+                            # Shared controls row (full width of controls area)
+                            with html.Div(classes="pa-2"):
+                                vuetify3.VCheckbox(
+                                    v_model="show_res_compare",
+                                    label="res compare",
+                                    hide_details=True,
+                                    density="compact",
+                                )
+                                html.Div(
+                                    "vel scale",
+                                    classes="text-caption mt-1",
+                                    style="font-size: 0.7rem;",
+                                )
+                                with html.Div(classes="d-flex flex-wrap ga-1 mt-1"):
+                                    vuetify3.VBtn(
+                                        "90%",
+                                        click=self.velocity_scale_fine_down,
+                                        size="x-small",
+                                        variant="outlined",
+                                    )
+                                    vuetify3.VBtn(
+                                        "/10",
+                                        click=self.velocity_scale_mag_down,
+                                        size="x-small",
+                                        variant="outlined",
+                                    )
+                                    vuetify3.VBtn(
+                                        "1:1",
+                                        click=self.velocity_scale_reset,
+                                        size="x-small",
+                                        variant="outlined",
+                                    )
+                                    vuetify3.VBtn(
+                                        "x10",
+                                        click=self.velocity_scale_mag_up,
+                                        size="x-small",
+                                        variant="outlined",
+                                    )
+                                    vuetify3.VBtn(
+                                        "110%",
+                                        click=self.velocity_scale_fine_up,
+                                        size="x-small",
+                                        variant="outlined",
+                                    )
+                                vuetify3.VTextField(
+                                    v_model=("velocity_scale_display", "1"),
+                                    label="scale",
+                                    type="text",
+                                    inputmode="decimal",
+                                    density="compact",
+                                    hide_details=True,
+                                    variant="outlined",
+                                    classes="mt-1",
+                                )
 
-                        # RIGHT LARGE AREA - Map and Colorbars (grid cols 2-10, rows 0-8)
-                        with vuetify3.VCol(cols=10, classes="pa-0 d-flex flex-column"):
+                        # RIGHT LARGE AREA - Map and Colorbars
+                        with vuetify3.VCol(cols=9, classes="pa-0 d-flex flex-column"):
                             # Main map area (rows 0-8)
                             with vuetify3.VCard(
                                 classes="flex-grow-1",
