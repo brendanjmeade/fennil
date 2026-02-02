@@ -103,6 +103,11 @@ FAULT_LINE_STYLE = {
     2: {"color": [0, 128, 0, 255], "width": 3},
 }
 
+FILE_BROWSER_HEADERS = [
+    {"title": "Name", "align": "start", "key": "name", "sortable": False},
+    {"title": "Type", "align": "start", "key": "type", "sortable": False},
+]
+
 
 # ---------------------------------------------------------
 # Coordinate transformation utilities
@@ -295,11 +300,26 @@ class MyTrameApp(TrameApp):
         self.state.map_pitch = 0
         self.state.map_bearing = 0
 
+        # File browser state
+        data_root = Path(__file__).parent.parent.parent.parent / "data"
+        self.state.show_file_browser = False
+        self.state.file_browser_target = 1
+        self.state.file_browser_current = str(data_root.resolve())
+        self.state.file_browser_listing = []
+        self.state.file_browser_active = -1
+        self.state.file_browser_error = ""
+        self.state.file_browser_headers = FILE_BROWSER_HEADERS
+        self.state.folder_1_full_path = ""
+        self.state.folder_2_full_path = ""
+
         # One-time registration guard
         self._ready_registered = False
 
         # build ui
         self._build_ui()
+
+        # Initialize file browser listing
+        self._file_browser_update_listing()
 
     def _initialize_map(self, **kwargs):  # noqa: ARG002
         """Initialize the map with default view"""
@@ -552,16 +572,111 @@ class MyTrameApp(TrameApp):
 
         return True, tde_df, tde_perim_df
 
-    def _load_data(self, folder_number):
+    def _file_browser_update_listing(self):
+        current = Path(self.state.file_browser_current)
+        if not current.exists():
+            current = Path.home()
+            self.state.file_browser_current = str(current.resolve())
+        entries = []
+        for entry in current.iterdir():
+            name = entry.name
+            if name.startswith("."):
+                continue
+            if entry.is_dir():
+                entries.append(
+                    {
+                        "name": name,
+                        "type": "directory",
+                        "icon": "mdi-folder",
+                    }
+                )
+            elif entry.is_file():
+                entries.append(
+                    {
+                        "name": name,
+                        "type": "file",
+                        "icon": "mdi-file-document-outline",
+                    }
+                )
+        entries.sort(key=lambda item: (item["type"] != "directory", item["name"]))
+        listing = [{**item, "index": idx} for idx, item in enumerate(entries)]
+        with self.state:
+            self.state.file_browser_listing = listing
+            self.state.file_browser_active = -1
+
+    def _file_browser_select_entry(self, entry):
+        self.state.file_browser_active = entry.get("index", -1) if entry else -1
+
+    def _file_browser_open_entry(self, entry):
+        if not entry:
+            return
+        if entry.get("type") != "directory":
+            return
+        current = Path(self.state.file_browser_current)
+        next_path = (current / entry.get("name")).resolve()
+        self.state.file_browser_current = str(next_path)
+        self._file_browser_update_listing()
+
+    def _file_browser_go_home(self):
+        self.state.file_browser_current = str(Path.home().resolve())
+        self._file_browser_update_listing()
+
+    def _file_browser_go_parent(self):
+        current = Path(self.state.file_browser_current)
+        parent = current.parent if current.parent != current else current
+        self.state.file_browser_current = str(parent.resolve())
+        self._file_browser_update_listing()
+
+    @staticmethod
+    def _is_valid_data_folder(folder_path):
+        required = {"model_station.csv", "model_segment.csv", "model_meshes.csv"}
+        return all((folder_path / name).is_file() for name in required)
+
+    def _file_browser_select_folder(self):
+        current = Path(self.state.file_browser_current)
+        folder_path = current
+        active_idx = self.state.file_browser_active
+        if active_idx is not None and active_idx >= 0:
+            if active_idx >= len(self.state.file_browser_listing):
+                active_idx = -1
+            else:
+                entry = self.state.file_browser_listing[active_idx]
+                if entry.get("type") == "directory":
+                    folder_path = (current / entry.get("name")).resolve()
+        if not self._is_valid_data_folder(folder_path):
+            self.state.file_browser_error = (
+                "Selected folder is missing required model_*.csv files."
+            )
+            return
+        self.state.file_browser_error = ""
+        target = int(self.state.file_browser_target)
+        self.state[f"folder_{target}_full_path"] = str(folder_path)
+        self.state.show_file_browser = False
+        self._load_data(target, folder_path=folder_path)
+
+    def _open_file_browser(self, folder_number):
+        self.state.file_browser_target = folder_number
+        existing = getattr(self.state, f"folder_{folder_number}_full_path", "")
+        if existing:
+            self.state.file_browser_current = str(Path(existing).resolve())
+        self.state.show_file_browser = True
+        self.state.file_browser_error = ""
+        self._file_browser_update_listing()
+
+    def _load_data(self, folder_number, folder_path=None):
         """Load earthquake data from a folder"""
-        # TODO: Replace with proper folder selection dialog
-        # Hardcoded path for now
         base_path = Path(__file__).parent.parent.parent.parent / "data"
-        folder_name = base_path / "0000000157"
+        if folder_path is None:
+            stored = getattr(self.state, f"folder_{folder_number}_full_path", "")
+            folder_path = Path(stored) if stored else None
+        if folder_path is None:
+            folder_path = base_path / "0000000157"
+        folder_name = Path(folder_path)
 
         # Update folder display
         folder_path_var = f"folder_{folder_number}_path"
         self.state[folder_path_var] = folder_name.name
+        self.state[f"folder_{folder_number}_full_path"] = str(folder_name.resolve())
 
         # Read CSV files
         station = pd.read_csv(folder_name / "model_station.csv")
@@ -621,13 +736,13 @@ class MyTrameApp(TrameApp):
 
     @controller.set("load_folder_1")
     def load_folder_1(self):
-        """Load data from folder 1"""
-        self._load_data(1)
+        """Open file browser for folder 1"""
+        self._open_file_browser(1)
 
     @controller.set("load_folder_2")
     def load_folder_2(self):
-        """Load data from folder 2"""
-        self._load_data(2)
+        """Open file browser for folder 2"""
+        self._open_file_browser(2)
 
     def _update_layers(self):
         """Update DeckGL layers based on loaded data and visibility controls"""
@@ -1519,3 +1634,94 @@ class MyTrameApp(TrameApp):
                                     "Resid. diff. (mm/yr): -5 ←→ +5",
                                     style="font-size: 0.75rem; color: #666;",
                                 )
+
+                with vuetify3.VDialog(
+                    v_model=("show_file_browser", False),
+                    max_width="900",
+                    persistent=True,
+                ):
+                    with vuetify3.VCard(title="Select data folder", rounded="lg"):
+                        with vuetify3.VCardText():
+                            with vuetify3.VRow(dense=True, classes="align-center"):
+                                vuetify3.VBtn(
+                                    icon="mdi-home",
+                                    variant="text",
+                                    size="small",
+                                    click=self._file_browser_go_home,
+                                )
+                                vuetify3.VBtn(
+                                    icon="mdi-folder-upload-outline",
+                                    variant="text",
+                                    size="small",
+                                    click=self._file_browser_go_parent,
+                                )
+                                vuetify3.VTextField(
+                                    v_model=("file_browser_current", ""),
+                                    hide_details=True,
+                                    density="compact",
+                                    variant="outlined",
+                                    readonly=True,
+                                    classes="ml-2 flex-grow-1",
+                                )
+                            with vuetify3.VDataTable(
+                                density="compact",
+                                fixed_header=True,
+                                headers=("file_browser_headers", FILE_BROWSER_HEADERS),
+                                items=("file_browser_listing", []),
+                                height="50vh",
+                                style="user-select: none; cursor: pointer;",
+                                items_per_page=-1,
+                            ):
+                                vuetify3.Template(raw_attrs=["v-slot:bottom"])
+                                with vuetify3.Template(
+                                    raw_attrs=['v-slot:item="{ item }"']
+                                ):
+                                    with vuetify3.VDataTableRow(
+                                        item=("item",),
+                                        click=(
+                                            self._file_browser_select_entry,
+                                            "[item]",
+                                        ),
+                                        dblclick=(
+                                            self._file_browser_open_entry,
+                                            "[item]",
+                                        ),
+                                        classes=(
+                                            "{ 'bg-grey-lighten-3': item.index === file_browser_active }",
+                                        ),
+                                    ):
+                                        with vuetify3.Template(
+                                            raw_attrs=["v-slot:item.name"]
+                                        ):
+                                            with html.Div(
+                                                classes="d-flex align-center"
+                                            ):
+                                                vuetify3.VIcon(
+                                                    "{{ item.icon }}",
+                                                    size="small",
+                                                    classes="mr-2",
+                                                )
+                                                html.Div("{{ item.name }}")
+                                        with vuetify3.Template(
+                                            raw_attrs=["v-slot:item.type"]
+                                        ):
+                                            html.Div("{{ item.type }}")
+
+                        with vuetify3.VCardActions(classes="pa-3"):
+                            html.Div(
+                                "{{ file_browser_error }}",
+                                v_if="file_browser_error",
+                                classes="text-error text-caption",
+                            )
+                            vuetify3.VSpacer()
+                            vuetify3.VBtn(
+                                text="Cancel",
+                                variant="flat",
+                                click="show_file_browser=false",
+                            )
+                            vuetify3.VBtn(
+                                text="Select folder",
+                                color="primary",
+                                variant="flat",
+                                click=self._file_browser_select_folder,
+                            )
