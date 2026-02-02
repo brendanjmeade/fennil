@@ -937,6 +937,43 @@ class MyTrameApp(TrameApp):
                 colors_array.append([r, g, b, 255])
             return colors_array
 
+        def add_scatter_layer(
+            layer_id_prefix,
+            data_df,
+            fill_color,
+            radius,
+            radius_min_pixels=1,
+            radius_max_pixels=10,
+            pickable=False,
+        ):
+            layers.append(
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=data_df,
+                    get_position=["lon", "lat"],
+                    get_fill_color=fill_color,
+                    get_radius=radius,
+                    radius_min_pixels=radius_min_pixels,
+                    radius_max_pixels=radius_max_pixels,
+                    pickable=pickable,
+                    id=f"{layer_id_prefix}_{folder_number}",
+                )
+            )
+            shift_df = self._shift_longitudes_df(data_df, ["lon"])
+            layers.append(
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=shift_df,
+                    get_position=["lon", "lat"],
+                    get_fill_color=fill_color,
+                    get_radius=radius,
+                    radius_min_pixels=radius_min_pixels,
+                    radius_max_pixels=radius_max_pixels,
+                    pickable=pickable,
+                    id=f"{layer_id_prefix}_shift_{folder_number}",
+                )
+            )
+
         def format_number(value, precision=4):
             try:
                 if not np.isfinite(value):
@@ -970,18 +1007,14 @@ class MyTrameApp(TrameApp):
                 f"<b>Name</b>: {name}" for name in station_df["name"]
             ]
 
-            layers.append(
-                pdk.Layer(
-                    "ScatterplotLayer",
-                    data=station_df,
-                    get_position=["lon", "lat"],
-                    get_fill_color=colors["loc"],
-                    get_radius=3000,
-                    radius_min_pixels=2,
-                    radius_max_pixels=5,
-                    pickable=True,
-                    id=f"stations_{folder_number}",
-                )
+            add_scatter_layer(
+                "stations",
+                station_df,
+                colors["loc"],
+                3000,
+                radius_min_pixels=2,
+                radius_max_pixels=5,
+                pickable=True,
             )
 
         # Observed velocities
