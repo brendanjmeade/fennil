@@ -68,6 +68,41 @@ TYPE_COLORS = {
 
 LINE_WIDTHS = {1: 1, 2: 2}
 
+# ColorBrewer RdBu[11] palette for discrete slip-rate coloring
+RDBU_11 = [
+    (103, 0, 31),
+    (178, 24, 43),
+    (214, 96, 77),
+    (244, 165, 130),
+    (253, 219, 199),
+    (247, 247, 247),
+    (209, 229, 240),
+    (146, 197, 222),
+    (67, 147, 195),
+    (33, 102, 172),
+    (5, 48, 97),
+]
+
+SLIP_RATE_MIN = -100.0
+SLIP_RATE_MAX = 100.0
+SHIFT_LON = -360.0
+
+FAULT_PROJ_STYLE = {
+    1: {
+        "fill": [173, 216, 230, 77],  # lightblue @ 0.3 alpha
+        "line": [0, 0, 255, 255],  # blue
+    },
+    2: {
+        "fill": [144, 238, 144, 77],  # lightgreen @ 0.3 alpha
+        "line": [0, 128, 0, 255],  # green
+    },
+}
+
+FAULT_LINE_STYLE = {
+    1: {"color": [0, 0, 255, 255], "width": 1},
+    2: {"color": [0, 128, 0, 255], "width": 3},
+}
+
 
 # ---------------------------------------------------------
 # Coordinate transformation utilities
@@ -112,6 +147,64 @@ def wrap2360(lon):
     """Wrap longitude to 0-360 range"""
     lon[np.where(lon < 0.0)] += 360.0
     return lon
+
+
+def calculate_fault_bottom_edge(lon1, lat1, lon2, lat2, depth_km, dip_degrees):
+    """Calculate bottom edge coordinates for a dipping fault plane."""
+    dip_rad = np.radians(dip_degrees)
+    lat1_rad = np.radians(lat1)
+    lat2_rad = np.radians(lat2)
+    lon1_rad = np.radians(lon1)
+    lon2_rad = np.radians(lon2)
+
+    # Earth radius in kilometers
+    earth_radius_km = 6371.0
+
+    # For a vertical fault, bottom coordinates are the same as top
+    if np.abs(dip_degrees - 90.0) < 1e-6:
+        return lon1, lat1, lon2, lat2
+
+    delta_lon = lon2_rad - lon1_rad
+    y = np.sin(delta_lon) * np.cos(lat2_rad)
+    x = np.cos(lat1_rad) * np.sin(lat2_rad) - np.sin(lat1_rad) * np.cos(
+        lat2_rad
+    ) * np.cos(delta_lon)
+    strike_bearing = np.arctan2(y, x)
+
+    # Dip direction is perpendicular to strike
+    dip_direction = strike_bearing + np.pi / 2
+
+    min_dip_rad = np.deg2rad(0.1)
+    if np.abs(dip_rad) < min_dip_rad:
+        return lon1, lat1, lon2, lat2
+
+    horizontal_distance_km = depth_km / np.tan(dip_rad)
+    angular_distance = horizontal_distance_km / earth_radius_km
+
+    lat1_bottom_rad = np.arcsin(
+        np.sin(lat1_rad) * np.cos(angular_distance)
+        + np.cos(lat1_rad) * np.sin(angular_distance) * np.cos(dip_direction)
+    )
+    lon1_bottom_rad = lon1_rad + np.arctan2(
+        np.sin(dip_direction) * np.sin(angular_distance) * np.cos(lat1_rad),
+        np.cos(angular_distance) - np.sin(lat1_rad) * np.sin(lat1_bottom_rad),
+    )
+
+    lat2_bottom_rad = np.arcsin(
+        np.sin(lat2_rad) * np.cos(angular_distance)
+        + np.cos(lat2_rad) * np.sin(angular_distance) * np.cos(dip_direction)
+    )
+    lon2_bottom_rad = lon2_rad + np.arctan2(
+        np.sin(dip_direction) * np.sin(angular_distance) * np.cos(lat2_rad),
+        np.cos(angular_distance) - np.sin(lat2_rad) * np.sin(lat2_bottom_rad),
+    )
+
+    lon1_bottom = np.degrees(lon1_bottom_rad)
+    lat1_bottom = np.degrees(lat1_bottom_rad)
+    lon2_bottom = np.degrees(lon2_bottom_rad)
+    lat2_bottom = np.degrees(lat2_bottom_rad)
+
+    return lon1_bottom, lat1_bottom, lon2_bottom, lat2_bottom
 
 
 def sph2cart(lon, lat, radius):
@@ -212,6 +305,253 @@ class MyTrameApp(TrameApp):
         """Initialize the map with default view"""
         self.ctrl.deck_update(self._build_deck([]))
 
+    @staticmethod
+    def _shift_longitudes_df(data_df, columns, shift=SHIFT_LON):
+        shifted = data_df.copy()
+        for column in columns:
+            shifted[column] = shifted[column] + shift
+        return shifted
+
+    @staticmethod
+    def _shift_polygon_df(data_df, polygon_key="polygon", shift=SHIFT_LON):
+        shifted = data_df.copy()
+        shifted[polygon_key] = [
+            [[pt[0] + shift, pt[1]] for pt in polygon]
+            for polygon in data_df[polygon_key]
+        ]
+        return shifted
+
+    @staticmethod
+    def _build_fault_proj_data(segment):
+        fault_proj_required = {
+            "lon1",
+            "lat1",
+            "lon2",
+            "lat2",
+            "dip",
+            "locking_depth",
+        }
+        fault_proj_available = fault_proj_required.issubset(segment.columns)
+        if not fault_proj_available:
+            return False, None
+
+        fault_proj_polygons = []
+        fault_proj_dips = []
+        fault_proj_names = []
+        for i in range(len(segment)):
+            dip_deg = segment["dip"].iloc[i]
+            locking_depth = segment["locking_depth"].iloc[i]
+            if not np.isfinite(dip_deg) or not np.isfinite(locking_depth):
+                continue
+            if abs(dip_deg - 90.0) <= 1e-6:
+                continue
+
+            lon1 = segment["lon1"].iloc[i]
+            lat1 = segment["lat1"].iloc[i]
+            lon2 = segment["lon2"].iloc[i]
+            lat2 = segment["lat2"].iloc[i]
+
+            lon1_bot, lat1_bot, lon2_bot, lat2_bot = calculate_fault_bottom_edge(
+                lon1,
+                lat1,
+                lon2,
+                lat2,
+                locking_depth,
+                dip_deg,
+            )
+            fault_proj_polygons.append(
+                [
+                    [lon1, lat1],
+                    [lon2, lat2],
+                    [lon2_bot, lat2_bot],
+                    [lon1_bot, lat1_bot],
+                    [lon1, lat1],
+                ]
+            )
+            fault_proj_dips.append(float(dip_deg))
+            if "name" in segment.columns:
+                fault_proj_names.append(str(segment["name"].iloc[i]))
+            else:
+                fault_proj_names.append("")
+
+        if not fault_proj_polygons:
+            return True, None
+
+        fault_proj_df = pd.DataFrame(
+            {
+                "polygon": fault_proj_polygons,
+                "dip": fault_proj_dips,
+                "name": fault_proj_names,
+            }
+        )
+        return True, fault_proj_df
+
+    @staticmethod
+    def _build_tde_data(meshes):
+        tde_required = {
+            "lon1",
+            "lat1",
+            "dep1",
+            "lon2",
+            "lat2",
+            "dep2",
+            "lon3",
+            "lat3",
+            "dep3",
+            "mesh_idx",
+            "strike_slip_rate",
+            "dip_slip_rate",
+        }
+        tde_available = tde_required.issubset(meshes.columns)
+        if not tde_available:
+            return False, None, None
+
+        lon1_mesh = meshes["lon1"].to_numpy().copy()
+        lat1_mesh = meshes["lat1"].to_numpy()
+        dep1_mesh = meshes["dep1"].to_numpy()
+        lon2_mesh = meshes["lon2"].to_numpy().copy()
+        lat2_mesh = meshes["lat2"].to_numpy()
+        dep2_mesh = meshes["dep2"].to_numpy()
+        lon3_mesh = meshes["lon3"].to_numpy().copy()
+        lat3_mesh = meshes["lat3"].to_numpy()
+        dep3_mesh = meshes["dep3"].to_numpy()
+        mesh_idx = meshes["mesh_idx"].to_numpy()
+
+        # Wrap longitude to 0-360
+        lon1_mesh[lon1_mesh < 0] += 360
+        lon2_mesh[lon2_mesh < 0] += 360
+        lon3_mesh[lon3_mesh < 0] += 360
+
+        # Calculate element geometry for steep dipping meshes
+        tri_leg1 = np.transpose(
+            [
+                np.deg2rad(lon2_mesh - lon1_mesh),
+                np.deg2rad(lat2_mesh - lat1_mesh),
+                (1 + KM2M * dep2_mesh / RADIUS_EARTH)
+                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
+            ]
+        )
+        tri_leg2 = np.transpose(
+            [
+                np.deg2rad(lon3_mesh - lon1_mesh),
+                np.deg2rad(lat3_mesh - lat1_mesh),
+                (1 + KM2M * dep3_mesh / RADIUS_EARTH)
+                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
+            ]
+        )
+        norm_vec = np.cross(tri_leg1, tri_leg2)
+        tri_area = np.linalg.norm(norm_vec, axis=1)
+        azimuth, elevation, r = cart2sph(norm_vec[:, 0], norm_vec[:, 1], norm_vec[:, 2])
+        strike = wrap2360(-np.rad2deg(azimuth))
+        dip = 90 - np.rad2deg(elevation)
+        dip[dip > 90] = 180.0 - dip[dip > 90]
+
+        # Project steeply dipping meshes
+        mesh_list = np.unique(mesh_idx)
+        proj_mesh_flag = np.zeros_like(mesh_list)
+        mesh_area = np.zeros_like(mesh_list, dtype=float)
+        for i in mesh_list:
+            this_mesh_els = mesh_idx == i
+            mesh_area[i] = np.mean(tri_area[this_mesh_els])
+            this_mesh_dip = np.mean(dip[this_mesh_els])
+            if this_mesh_dip > 75:
+                proj_mesh_flag[i] = 1
+                dip_dir = np.mean(np.deg2rad(strike[this_mesh_els] + 90))
+                lon1_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep1_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+                lat1_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep1_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+                lon2_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep2_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+                lat2_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep2_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+                lon3_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep3_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+                lat3_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
+                    np.abs(KM2M * dep3_mesh[this_mesh_els] / RADIUS_EARTH)
+                )
+
+        proj_mesh_idx = np.where(proj_mesh_flag)[0]
+
+        # Determine mesh perimeter
+        edge1_lon = np.array((lon1_mesh, lon2_mesh))
+        edge1_lat = np.array((lat1_mesh, lat2_mesh))
+        edge1_array = np.vstack(
+            (np.sort(edge1_lon, axis=0), np.sort(edge1_lat, axis=0), mesh_idx)
+        )
+        edge2_lon = np.array((lon2_mesh, lon3_mesh))
+        edge2_lat = np.array((lat2_mesh, lat3_mesh))
+        edge2_array = np.vstack(
+            (np.sort(edge2_lon, axis=0), np.sort(edge2_lat, axis=0), mesh_idx)
+        )
+        edge3_lon = np.array((lon3_mesh, lon1_mesh))
+        edge3_lat = np.array((lat3_mesh, lat1_mesh))
+        edge3_array = np.vstack(
+            (np.sort(edge3_lon, axis=0), np.sort(edge3_lat, axis=0), mesh_idx)
+        )
+        all_edge_array = np.concatenate((edge1_array, edge2_array, edge3_array), axis=1)
+
+        edge1_array_unsorted = np.vstack((edge1_lon, edge1_lat, mesh_idx))
+        edge2_array_unsorted = np.vstack((edge2_lon, edge2_lat, mesh_idx))
+        edge3_array_unsorted = np.vstack((edge3_lon, edge3_lat, mesh_idx))
+        all_edge_array_unsorted = np.concatenate(
+            (edge1_array_unsorted, edge2_array_unsorted, edge3_array_unsorted), axis=1
+        )
+
+        unique_edges, unique_edge_index, edge_count = np.unique(
+            all_edge_array, return_index=True, return_counts=True, axis=1
+        )
+        unique_edges_unsorted = all_edge_array_unsorted[:, unique_edge_index]
+        perim_edges = unique_edges_unsorted[:, edge_count == 1]
+        proj_mesh_edge_flag = np.isin(perim_edges[-1, :], proj_mesh_idx).astype(int)
+
+        # Sort plotted mesh data, based on total mesh areas
+        mesh_plot_order = np.argsort(-mesh_area)
+        mesh_plot_order_index = []
+        for i in mesh_plot_order:
+            mesh_plot_order_index.extend(np.argwhere(mesh_idx == i).flatten().tolist())
+        mesh_plot_order_index = np.array(mesh_plot_order_index, dtype=int)
+
+        tde_df = None
+        if mesh_plot_order_index.size:
+            tde_df = pd.DataFrame(
+                {
+                    "polygon": [
+                        [
+                            [lon1_mesh[j], lat1_mesh[j]],
+                            [lon2_mesh[j], lat2_mesh[j]],
+                            [lon3_mesh[j], lat3_mesh[j]],
+                        ]
+                        for j in mesh_plot_order_index
+                    ],
+                    "ss_rate": meshes["strike_slip_rate"].to_numpy()[
+                        mesh_plot_order_index
+                    ],
+                    "ds_rate": meshes["dip_slip_rate"].to_numpy()[
+                        mesh_plot_order_index
+                    ],
+                }
+            )
+
+        tde_perim_df = None
+        if perim_edges.size:
+            tde_perim_df = pd.DataFrame(
+                {
+                    "start_lon": perim_edges[0, :],
+                    "start_lat": perim_edges[2, :],
+                    "end_lon": perim_edges[1, :],
+                    "end_lat": perim_edges[3, :],
+                    "proj_col": proj_mesh_edge_flag,
+                }
+            )
+
+        return True, tde_df, tde_perim_df
+
     def _load_data(self, folder_number):
         """Load earthquake data from a folder"""
         # TODO: Replace with proper folder selection dialog
@@ -247,78 +587,8 @@ class MyTrameApp(TrameApp):
         x1_seg, y1_seg = wgs84_to_web_mercator(lon1_seg, lat1_seg)
         x2_seg, y2_seg = wgs84_to_web_mercator(lon2_seg, lat2_seg)
 
-        # Process meshes (TDE)
-        lon1_mesh = meshes["lon1"].to_numpy().copy()
-        lat1_mesh = meshes["lat1"].to_numpy()
-        dep1_mesh = meshes["dep1"].to_numpy()
-        lon2_mesh = meshes["lon2"].to_numpy().copy()
-        lat2_mesh = meshes["lat2"].to_numpy()
-        dep2_mesh = meshes["dep2"].to_numpy()
-        lon3_mesh = meshes["lon3"].to_numpy().copy()
-        lat3_mesh = meshes["lat3"].to_numpy()
-        dep3_mesh = meshes["dep3"].to_numpy()
-        mesh_idx = meshes["mesh_idx"].to_numpy()
-
-        # Wrap longitude to 0-360
-        lon1_mesh[lon1_mesh < 0] += 360
-        lon2_mesh[lon2_mesh < 0] += 360
-        lon3_mesh[lon3_mesh < 0] += 360
-
-        # Calculate element geometry for steep dipping meshes
-        tri_leg1 = np.transpose(
-            [
-                np.deg2rad(lon2_mesh - lon1_mesh),
-                np.deg2rad(lat2_mesh - lat1_mesh),
-                (1 + KM2M * dep2_mesh / RADIUS_EARTH)
-                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
-            ]
-        )
-        tri_leg2 = np.transpose(
-            [
-                np.deg2rad(lon3_mesh - lon1_mesh),
-                np.deg2rad(lat3_mesh - lat1_mesh),
-                (1 + KM2M * dep3_mesh / RADIUS_EARTH)
-                - (1 + KM2M * dep1_mesh / RADIUS_EARTH),
-            ]
-        )
-        norm_vec = np.cross(tri_leg1, tri_leg2)
-        # tri_area = np.linalg.norm(norm_vec, axis=1)
-        azimuth, elevation, r = cart2sph(norm_vec[:, 0], norm_vec[:, 1], norm_vec[:, 2])
-        strike = wrap2360(-np.rad2deg(azimuth))
-        dip = 90 - np.rad2deg(elevation)
-        dip[dip > 90] = 180.0 - dip[dip > 90]
-
-        # Project steeply dipping meshes
-        mesh_list = np.unique(mesh_idx)
-        proj_mesh_flag = np.zeros_like(mesh_list)
-        for i in mesh_list:
-            this_mesh_els = mesh_idx == i
-            this_mesh_dip = np.mean(dip[this_mesh_els])
-            if this_mesh_dip > 75:
-                proj_mesh_flag[i] = 1
-                dip_dir = np.mean(np.deg2rad(strike[this_mesh_els] + 90))
-                lon1_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep1_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-                lat1_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep1_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-                lon2_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep2_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-                lat2_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep2_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-                lon3_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep3_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-                lat3_mesh[this_mesh_els] += np.cos(dip_dir) * np.rad2deg(
-                    np.abs(KM2M * dep3_mesh[this_mesh_els] / RADIUS_EARTH)
-                )
-
-        x1_mesh, y1_mesh = wgs84_to_web_mercator(lon1_mesh, lat1_mesh)
-        x2_mesh, y2_mesh = wgs84_to_web_mercator(lon2_mesh, lat2_mesh)
-        x3_mesh, y3_mesh = wgs84_to_web_mercator(lon3_mesh, lat3_mesh)
+        fault_proj_available, fault_proj_df = self._build_fault_proj_data(segment)
+        tde_available, tde_df, tde_perim_df = self._build_tde_data(meshes)
 
         # Store data
         data = {
@@ -332,12 +602,11 @@ class MyTrameApp(TrameApp):
             "y1_seg": y1_seg,
             "x2_seg": x2_seg,
             "y2_seg": y2_seg,
-            "x1_mesh": x1_mesh,
-            "y1_mesh": y1_mesh,
-            "x2_mesh": x2_mesh,
-            "y2_mesh": y2_mesh,
-            "x3_mesh": x3_mesh,
-            "y3_mesh": y3_mesh,
+            "tde_available": tde_available,
+            "tde_df": tde_df,
+            "tde_perim_df": tde_perim_df,
+            "fault_proj_available": fault_proj_available,
+            "fault_proj_df": fault_proj_df,
         }
 
         if folder_number == 1:
@@ -394,6 +663,7 @@ class MyTrameApp(TrameApp):
     def _create_layers_for_folder(self, folder_number, data):
         """Create DeckGL layers for a specific folder's data"""
         layers = []
+        vector_layers = []
         station = data["station"]
         x_station = data["x_station"]
         y_station = data["y_station"]
@@ -434,40 +704,115 @@ class MyTrameApp(TrameApp):
                 }
             )
 
-            shift_df = pd.DataFrame(
-                {
-                    "start_lon": station.lon.to_numpy() - 360,
-                    "start_lat": station.lat.to_numpy(),
-                    "end_lon": end_lon - 360,
-                    "end_lat": end_lat,
-                }
+            add_line_layer(
+                layer_id_prefix,
+                base_df,
+                base_color,
+                line_width,
+                width_min_pixels=1,
+                pickable=False,
+                layer_list=vector_layers,
             )
 
-            layers.append(
+        def add_line_layer(
+            layer_id_prefix,
+            data_df,
+            get_color,
+            line_width,
+            width_min_pixels=1,
+            pickable=False,
+            layer_list=None,
+        ):
+            """Add base and -360 shifted line layers."""
+            target_layers = layer_list if layer_list is not None else layers
+            target_layers.append(
                 pdk.Layer(
                     "LineLayer",
-                    data=base_df,
+                    data=data_df,
                     get_source_position=["start_lon", "start_lat"],
                     get_target_position=["end_lon", "end_lat"],
-                    get_color=base_color,
+                    get_color=get_color,
                     get_width=line_width,
-                    width_min_pixels=1,
+                    width_min_pixels=width_min_pixels,
+                    pickable=pickable,
                     id=f"{layer_id_prefix}_{folder_number}",
                 )
             )
 
-            layers.append(
+            shift_df = self._shift_longitudes_df(data_df, ["start_lon", "end_lon"])
+            target_layers.append(
                 pdk.Layer(
                     "LineLayer",
                     data=shift_df,
                     get_source_position=["start_lon", "start_lat"],
                     get_target_position=["end_lon", "end_lat"],
-                    get_color=base_color,
+                    get_color=get_color,
                     get_width=line_width,
-                    width_min_pixels=1,
+                    width_min_pixels=width_min_pixels,
+                    pickable=pickable,
                     id=f"{layer_id_prefix}_shift_{folder_number}",
                 )
             )
+
+        def add_polygon_layer(
+            layer_id_prefix,
+            data_df,
+            fill_color,
+            line_color,
+            line_width,
+            line_width_min_pixels=1,
+            stroked=True,
+            pickable=True,
+        ):
+            """Add base and -360 shifted polygon layers."""
+            layers.append(
+                pdk.Layer(
+                    "PolygonLayer",
+                    data=data_df,
+                    get_polygon="polygon",
+                    get_fill_color=fill_color,
+                    get_line_color=line_color,
+                    get_line_width=line_width,
+                    filled=True,
+                    stroked=stroked,
+                    line_width_min_pixels=line_width_min_pixels,
+                    pickable=pickable,
+                    id=f"{layer_id_prefix}_{folder_number}",
+                )
+            )
+
+            shift_df = self._shift_polygon_df(data_df)
+            layers.append(
+                pdk.Layer(
+                    "PolygonLayer",
+                    data=shift_df,
+                    get_polygon="polygon",
+                    get_fill_color=fill_color,
+                    get_line_color=line_color,
+                    get_line_width=line_width,
+                    filled=True,
+                    stroked=stroked,
+                    line_width_min_pixels=line_width_min_pixels,
+                    pickable=pickable,
+                    id=f"{layer_id_prefix}_shift_{folder_number}",
+                )
+            )
+
+        def map_slip_colors(values):
+            """Map slip values to discrete RdBu[11] colors."""
+            colors_array = []
+            span = SLIP_RATE_MAX - SLIP_RATE_MIN
+            for raw_value in values:
+                value = raw_value
+                if not np.isfinite(value):
+                    value = 0.0
+                value = float(np.clip(value, SLIP_RATE_MIN, SLIP_RATE_MAX))
+                position = (value - SLIP_RATE_MIN) / span
+                index = int(np.floor(position * len(RDBU_11)))
+                index = max(0, min(len(RDBU_11) - 1, index))
+                r, g, b = RDBU_11[index]
+                colors_array.append([r, g, b, 255])
+            return colors_array
 
         # Station locations (only when explicitly requested)
         if self.state[f"show_locs_{folder_number}"]:
@@ -574,24 +919,91 @@ class MyTrameApp(TrameApp):
                 base_width,
             )
 
+        # TDE slip rates (triangular dislocation elements)
+        show_tde = self.state[f"show_tde_{folder_number}"]
+        if show_tde:
+            if not data.get("tde_available", False):
+                self.state[f"show_tde_{folder_number}"] = False
+            else:
+                tde_df = data.get("tde_df")
+                if tde_df is not None and not tde_df.empty:
+                    tde_slip_type = self.state[f"tde_slip_type_{folder_number}"]
+                    if tde_slip_type == "ss":
+                        slip_values = tde_df["ss_rate"].to_numpy()
+                    else:
+                        slip_values = tde_df["ds_rate"].to_numpy()
+                    tde_df = tde_df.copy()
+                    tde_df["color"] = map_slip_colors(slip_values)
+                    add_polygon_layer(
+                        "tde",
+                        tde_df,
+                        "color",
+                        [0, 0, 0, 0],
+                        0,
+                        line_width_min_pixels=0,
+                        stroked=False,
+                        pickable=False,
+                    )
+
+                tde_perim_df = data.get("tde_perim_df")
+                if tde_perim_df is not None and not tde_perim_df.empty:
+                    tde_perim_df = tde_perim_df.copy()
+                    tde_perim_df["color"] = [
+                        [255, 0, 0, 255] if int(flag) == 1 else [0, 0, 0, 255]
+                        for flag in tde_perim_df["proj_col"]
+                    ]
+                    add_line_layer(
+                        "tde_perim",
+                        tde_perim_df,
+                        "color",
+                        1,
+                        width_min_pixels=1,
+                        pickable=False,
+                    )
+
+        # Base fault segments (always visible once data is loaded)
+        segment = data["segment"]
+        fault_lines_df = pd.DataFrame(
+            {
+                "start_lon": segment.lon1.to_numpy(),
+                "start_lat": segment.lat1.to_numpy(),
+                "end_lon": segment.lon2.to_numpy(),
+                "end_lat": segment.lat2.to_numpy(),
+            }
+        )
+        base_style = FAULT_LINE_STYLE[folder_number]
+        add_line_layer(
+            "fault_lines",
+            fault_lines_df,
+            base_style["color"],
+            base_style["width"],
+            width_min_pixels=1,
+            pickable=False,
+        )
+
         # Fault segments
         show_seg_color = self.state[f"show_seg_color_{folder_number}"]
         if show_seg_color:
             segment = data["segment"]
             seg_slip_type = self.state[f"seg_slip_type_{folder_number}"]
 
+            required_cols = {
+                "model_strike_slip_rate",
+                "model_dip_slip_rate",
+                "model_tensile_slip_rate",
+            }
+            if not required_cols.issubset(segment.columns):
+                if self.state[f"show_seg_color_{folder_number}"]:
+                    self.state[f"show_seg_color_{folder_number}"] = False
+                return layers
+
             # Get slip values based on type (strike-slip or dip-slip)
             if seg_slip_type == "ss":
-                slip_values = (
-                    segment.ss_rate.to_numpy()
-                    if "ss_rate" in segment.columns
-                    else np.zeros(len(segment))
-                )
+                slip_values = segment.model_strike_slip_rate.to_numpy()
             else:  # ds
                 slip_values = (
-                    segment.ds_rate.to_numpy()
-                    if "ds_rate" in segment.columns
-                    else np.zeros(len(segment))
+                    segment.model_dip_slip_rate.to_numpy()
+                    - segment.model_tensile_slip_rate.to_numpy()
                 )
 
             # Create segment lines with color based on slip rate
@@ -605,36 +1017,36 @@ class MyTrameApp(TrameApp):
                 }
             )
 
-            # Normalize slip rate for coloring (-100 to 100 mm/yr)
-            slip_normalized = np.clip(slip_values / 100.0, -1.0, 1.0)
-
-            # Color map: blue (negative) -> white (zero) -> red (positive)
-            def slip_to_color(slip_norm):
-                if slip_norm < 0:
-                    # Blue to white
-                    t = slip_norm + 1.0  # 0 to 1
-                    return [int(255 * t), int(255 * t), 255, 200]
-                # White to red
-                t = slip_norm  # 0 to 1
-                return [255, int(255 * (1 - t)), int(255 * (1 - t)), 200]
-
-            colors_array = [slip_to_color(s) for s in slip_normalized]
+            colors_array = map_slip_colors(slip_values)
             seg_lines_df["color"] = colors_array
 
-            layers.append(
-                pdk.Layer(
-                    "LineLayer",
-                    data=seg_lines_df,
-                    get_source_position=["start_lon", "start_lat"],
-                    get_target_position=["end_lon", "end_lat"],
-                    get_color="color",
-                    get_width=3,
-                    width_min_pixels=2,
-                    pickable=True,
-                    id=f"segments_{folder_number}",
-                )
+            add_line_layer(
+                "segments",
+                seg_lines_df,
+                "color",
+                3,
+                width_min_pixels=2,
+                pickable=True,
             )
 
+        # Fault surface projections
+        show_fault_proj = self.state[f"show_fault_proj_{folder_number}"]
+        if show_fault_proj:
+            if not data.get("fault_proj_available", False):
+                self.state[f"show_fault_proj_{folder_number}"] = False
+            else:
+                fault_proj_df = data.get("fault_proj_df")
+                if fault_proj_df is not None and not fault_proj_df.empty:
+                    style = FAULT_PROJ_STYLE[folder_number]
+                    add_polygon_layer(
+                        "fault_proj",
+                        fault_proj_df,
+                        style["fill"],
+                        style["line"],
+                        1,
+                    )
+
+        layers.extend(vector_layers)
         return layers
 
     @change("velocity_scale")
@@ -724,6 +1136,9 @@ class MyTrameApp(TrameApp):
         "show_mog_1",
         "show_seg_color_1",
         "seg_slip_type_1",
+        "show_tde_1",
+        "tde_slip_type_1",
+        "show_fault_proj_1",
         "show_locs_2",
         "show_obs_2",
         "show_mod_2",
@@ -735,6 +1150,9 @@ class MyTrameApp(TrameApp):
         "show_mog_2",
         "show_seg_color_2",
         "seg_slip_type_2",
+        "show_tde_2",
+        "tde_slip_type_2",
+        "show_fault_proj_2",
     )
     def on_visibility_change(self, **kwargs):  # noqa: ARG002
         """Update visualization when visibility controls change"""
