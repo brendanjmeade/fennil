@@ -311,6 +311,14 @@ class MyTrameApp(TrameApp):
         self.state.file_browser_headers = FILE_BROWSER_HEADERS
         self.state.folder_1_full_path = ""
         self.state.folder_2_full_path = ""
+        self.state.deckgl_tooltip = {
+            "html": "{tooltip}",
+            "style": {
+                "backgroundColor": "rgba(0, 0, 0, 0.85)",
+                "color": "white",
+                "fontSize": "12px",
+            },
+        }
 
         # One-time registration guard
         self._ready_registered = False
@@ -929,6 +937,26 @@ class MyTrameApp(TrameApp):
                 colors_array.append([r, g, b, 255])
             return colors_array
 
+        def format_number(value, precision=4):
+            try:
+                if not np.isfinite(value):
+                    return "n/a"
+            except TypeError:
+                return "n/a"
+            return f"{value:.{precision}f}"
+
+        def format_segment_tooltip(
+            name, lon1, lat1, lon2, lat2, ss_rate, ds_rate, ts_rate
+        ):
+            return (
+                f"<b>Name</b>: {name}<br/>"
+                f"<b>Start</b>: ({format_number(lon1)}, {format_number(lat1)})<br/>"
+                f"<b>End</b>: ({format_number(lon2)}, {format_number(lat2)})<br/>"
+                f"<b>Strike-Slip Rate</b>: {format_number(ss_rate)}<br/>"
+                f"<b>Dip-Slip Rate</b>: {format_number(ds_rate)}<br/>"
+                f"<b>Tensile-Slip Rate</b>: {format_number(ts_rate)}"
+            )
+
         # Station locations (only when explicitly requested)
         if self.state[f"show_locs_{folder_number}"]:
             station_df = pd.DataFrame(
@@ -938,6 +966,9 @@ class MyTrameApp(TrameApp):
                     "name": station.name.to_numpy(),
                 }
             )
+            station_df["tooltip"] = [
+                f"<b>Name</b>: {name}" for name in station_df["name"]
+            ]
 
             layers.append(
                 pdk.Layer(
@@ -1076,6 +1107,8 @@ class MyTrameApp(TrameApp):
                         pickable=False,
                     )
 
+        seg_tooltip_enabled = folder_number == 1
+
         # Base fault segments (always visible once data is loaded)
         segment = data["segment"]
         fault_lines_df = pd.DataFrame(
@@ -1086,6 +1119,44 @@ class MyTrameApp(TrameApp):
                 "end_lat": segment.lat2.to_numpy(),
             }
         )
+        if seg_tooltip_enabled:
+            if {
+                "model_strike_slip_rate",
+                "model_dip_slip_rate",
+                "model_tensile_slip_rate",
+            }.issubset(segment.columns):
+                ss_rates = segment.model_strike_slip_rate.to_numpy()
+                ds_rates = (
+                    segment.model_dip_slip_rate.to_numpy()
+                    - segment.model_tensile_slip_rate.to_numpy()
+                )
+                ts_rates = segment.model_tensile_slip_rate.to_numpy()
+            else:
+                ss_rates = np.full(len(segment), np.nan)
+                ds_rates = np.full(len(segment), np.nan)
+                ts_rates = np.full(len(segment), np.nan)
+            fault_lines_df["tooltip"] = [
+                format_segment_tooltip(
+                    name,
+                    lon1,
+                    lat1,
+                    lon2,
+                    lat2,
+                    ss,
+                    ds,
+                    ts,
+                )
+                for name, lon1, lat1, lon2, lat2, ss, ds, ts in zip(
+                    segment.name.to_numpy(),
+                    segment.lon1.to_numpy(),
+                    segment.lat1.to_numpy(),
+                    segment.lon2.to_numpy(),
+                    segment.lat2.to_numpy(),
+                    ss_rates,
+                    ds_rates,
+                    ts_rates,
+                )
+            ]
         base_style = FAULT_LINE_STYLE[folder_number]
         add_line_layer(
             "fault_lines",
@@ -1093,7 +1164,7 @@ class MyTrameApp(TrameApp):
             base_style["color"],
             base_style["width"],
             width_min_pixels=1,
-            pickable=False,
+            pickable=seg_tooltip_enabled,
         )
 
         # Fault segments
@@ -1134,6 +1205,8 @@ class MyTrameApp(TrameApp):
 
             colors_array = map_slip_colors(slip_values)
             seg_lines_df["color"] = colors_array
+            if seg_tooltip_enabled and "tooltip" in fault_lines_df.columns:
+                seg_lines_df["tooltip"] = fault_lines_df["tooltip"].to_numpy()
 
             add_line_layer(
                 "segments",
@@ -1141,7 +1214,7 @@ class MyTrameApp(TrameApp):
                 "color",
                 3,
                 width_min_pixels=2,
-                pickable=True,
+                pickable=seg_tooltip_enabled,
             )
 
         # Fault surface projections
@@ -1159,6 +1232,7 @@ class MyTrameApp(TrameApp):
                         style["fill"],
                         style["line"],
                         1,
+                        pickable=False,
                     )
 
         layers.extend(vector_layers)
@@ -1601,6 +1675,7 @@ class MyTrameApp(TrameApp):
                                     mapbox_api_key=mapbox_access_token
                                     if HAS_MAPBOX_TOKEN
                                     else "",
+                                    tooltip=("deckgl_tooltip", None),
                                     style="width: 100%; height: 100%;",
                                     classes="fill-height",
                                 )
