@@ -754,17 +754,29 @@ class MyTrameApp(TrameApp):
 
     def _update_layers(self):
         """Update DeckGL layers based on loaded data and visibility controls"""
+        base_layers = []
         layers = []
+        vector_layers = []
 
         # Process folder 1 data
         if self.folder_1_data is not None:
-            layers.extend(self._create_layers_for_folder(1, self.folder_1_data))
+            tde_layers, folder_layers, folder_vectors = self._create_layers_for_folder(
+                1, self.folder_1_data
+            )
+            base_layers.extend(tde_layers)
+            layers.extend(folder_layers)
+            vector_layers.extend(folder_vectors)
 
         # Process folder 2 data
         if self.folder_2_data is not None:
-            layers.extend(self._create_layers_for_folder(2, self.folder_2_data))
+            tde_layers, folder_layers, folder_vectors = self._create_layers_for_folder(
+                2, self.folder_2_data
+            )
+            base_layers.extend(tde_layers)
+            layers.extend(folder_layers)
+            vector_layers.extend(folder_vectors)
 
-        self.ctrl.deck_update(self._build_deck(layers))
+        self.ctrl.deck_update(self._build_deck(base_layers + layers + vector_layers))
 
     def _build_deck(self, layers):
         """Construct a Deck instance with current map settings and provided layers."""
@@ -785,6 +797,7 @@ class MyTrameApp(TrameApp):
 
     def _create_layers_for_folder(self, folder_number, data):
         """Create DeckGL layers for a specific folder's data"""
+        tde_layers = []
         layers = []
         vector_layers = []
         station = data["station"]
@@ -886,9 +899,11 @@ class MyTrameApp(TrameApp):
             line_width_min_pixels=1,
             stroked=True,
             pickable=True,
+            layer_list=None,
         ):
             """Add base and -360 shifted polygon layers."""
-            layers.append(
+            target_layers = layer_list if layer_list is not None else layers
+            target_layers.append(
                 pdk.Layer(
                     "PolygonLayer",
                     data=data_df,
@@ -905,7 +920,7 @@ class MyTrameApp(TrameApp):
             )
 
             shift_df = self._shift_polygon_df(data_df)
-            layers.append(
+            target_layers.append(
                 pdk.Layer(
                     "PolygonLayer",
                     data=shift_df,
@@ -1122,6 +1137,7 @@ class MyTrameApp(TrameApp):
                         line_width_min_pixels=0,
                         stroked=False,
                         pickable=False,
+                        layer_list=tde_layers,
                     )
 
                 tde_perim_df = data.get("tde_perim_df")
@@ -1138,6 +1154,7 @@ class MyTrameApp(TrameApp):
                         1,
                         width_min_pixels=1,
                         pickable=False,
+                        layer_list=tde_layers,
                     )
 
         seg_tooltip_enabled = folder_number == 1
@@ -1268,8 +1285,7 @@ class MyTrameApp(TrameApp):
                         pickable=False,
                     )
 
-        layers.extend(vector_layers)
-        return layers
+        return tde_layers, layers, vector_layers
 
     @change("velocity_scale")
     def on_velocity_scale_change(self, velocity_scale, **kwargs):  # noqa: ARG002
