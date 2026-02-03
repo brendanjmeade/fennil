@@ -10,7 +10,7 @@ dependencies = [
     "trame>=3.12",
     "trame-vuetify",
     "trame-vtk",
-    "trame-deckgl",
+    "trame-deckgl>=2.0.4",
     "pydeck",
     "numpy",
     "pandas",
