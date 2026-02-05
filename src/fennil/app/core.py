@@ -378,11 +378,11 @@ class MyTrameApp(TrameApp):
 
     @controller.set("velocity_scale_mag_down")
     def velocity_scale_mag_down(self):
-        self._set_velocity_scale(self.state.velocity_scale / 10.0)
+        self._set_velocity_scale(self.state.velocity_scale / 2.0)
 
     @controller.set("velocity_scale_mag_up")
     def velocity_scale_mag_up(self):
-        self._set_velocity_scale(self.state.velocity_scale * 10.0)
+        self._set_velocity_scale(self.state.velocity_scale * 2.0)
 
     @change(
         "show_locs_1",
@@ -700,7 +700,7 @@ class MyTrameApp(TrameApp):
                                         variant="outlined",
                                     )
                                     vuetify3.VBtn(
-                                        "/10",
+                                        "/2",
                                         click=self.velocity_scale_mag_down,
                                         size="x-small",
                                         variant="outlined",
@@ -712,7 +712,7 @@ class MyTrameApp(TrameApp):
                                         variant="outlined",
                                     )
                                     vuetify3.VBtn(
-                                        "x10",
+                                        "x2",
                                         click=self.velocity_scale_mag_up,
                                         size="x-small",
                                         variant="outlined",
