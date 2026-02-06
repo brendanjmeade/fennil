@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 import pydeck as pdk
 
-from .data import Dataset
-from .geo import (
+from .state import FolderState
+from .utils import Dataset
+from .utils.geo import (
     normalize_longitude_difference,
     shift_longitudes_df,
     shift_polygon_df,
     web_mercator_to_wgs84,
 )
-from .state import FolderState
 
 VELOCITY_SCALE = 1000
 RED = [255, 0, 0, 255]
