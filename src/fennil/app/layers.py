@@ -11,6 +11,10 @@ from .geo import (
 )
 
 VELOCITY_SCALE = 1000
+RED = [255, 0, 0, 255]
+BLACK = [0, 0, 0, 255]
+SEGMENT_LINE_WIDTH = 3
+FAULT_PROJ_LINE_WIDTH = 1
 
 # Per-layer colors (RGBA) and per-folder line widths, mirroring the legacy viewer
 TYPE_COLORS = {
@@ -408,7 +412,7 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             if tde_perim_df is not None and not tde_perim_df.empty:
                 tde_perim_df = tde_perim_df.copy()
                 tde_perim_df["color"] = [
-                    [255, 0, 0, 255] if int(flag) == 1 else [0, 0, 0, 255]
+                    RED if int(flag) == 1 else BLACK
                     for flag in tde_perim_df["proj_col"]
                 ]
                 add_line_layer(
@@ -510,7 +514,7 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             "segments",
             seg_lines_df,
             "color",
-            3,
+            SEGMENT_LINE_WIDTH,
             width_min_pixels=2,
             pickable=seg_tooltip_enabled,
         )
@@ -528,7 +532,7 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
                     fault_proj_df,
                     style["fill"],
                     style["line"],
-                    1,
+                    FAULT_PROJ_LINE_WIDTH,
                     pickable=False,
                 )
 

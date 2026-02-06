@@ -3,21 +3,22 @@ import numpy as np
 SHIFT_LON = -360.0
 KM2M = 1.0e3
 RADIUS_EARTH = 6371000
+WEB_MERCATOR_RADIUS = 6378137.0
+VERTICAL_DIP_DEG = 90.0
+DIP_EPS = 1.0e-6
 
 
 def wgs84_to_web_mercator(lon, lat):
     """Converts decimal (longitude, latitude) to Web Mercator (x, y)."""
-    earth_radius = 6378137.0
-    x = earth_radius * np.deg2rad(lon)
-    y = earth_radius * np.log(np.tan(np.pi / 4.0 + np.deg2rad(lat) / 2.0))
+    x = WEB_MERCATOR_RADIUS * np.deg2rad(lon)
+    y = WEB_MERCATOR_RADIUS * np.log(np.tan(np.pi / 4.0 + np.deg2rad(lat) / 2.0))
     return x, y
 
 
 def web_mercator_to_wgs84(x, y):
     """Converts Web Mercator (x, y) to WGS84 (longitude, latitude)."""
-    earth_radius = 6378137.0
-    lon = np.rad2deg(x / earth_radius)
-    lat = np.rad2deg(2.0 * np.arctan(np.exp(y / earth_radius)) - np.pi / 2.0)
+    lon = np.rad2deg(x / WEB_MERCATOR_RADIUS)
+    lat = np.rad2deg(2.0 * np.arctan(np.exp(y / WEB_MERCATOR_RADIUS)) - np.pi / 2.0)
     return lon, lat
 
 
@@ -46,9 +47,9 @@ def calculate_fault_bottom_edge(lon1, lat1, lon2, lat2, depth_km, dip_degrees):
     lon1_rad = np.radians(lon1)
     lon2_rad = np.radians(lon2)
 
-    earth_radius_km = 6371.0
+    earth_radius_km = RADIUS_EARTH / KM2M
 
-    if np.abs(dip_degrees - 90.0) < 1e-6:
+    if np.abs(dip_degrees - VERTICAL_DIP_DEG) < DIP_EPS:
         return lon1, lat1, lon2, lat2
 
     delta_lon = lon2_rad - lon1_rad

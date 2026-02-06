@@ -37,6 +37,13 @@ HAS_MAPBOX_TOKEN = bool(mapbox_access_token)
 # Constants
 # ---------------------------------------------------------
 
+DEFAULT_VIEW_STATE = {
+    "latitude": 37.0,
+    "longitude": -122.0,
+    "zoom": 6,
+    "pitch": 0,
+    "bearing": 0,
+}
 VELOCITY_SCALE_MIN = 1.0e-6
 
 FILE_BROWSER_HEADERS = [
@@ -104,11 +111,11 @@ class MyTrameApp(TrameApp):
         self.state.show_res_compare = False
 
         # Map state
-        self.state.map_latitude = 37.0
-        self.state.map_longitude = -122.0
-        self.state.map_zoom = 6
-        self.state.map_pitch = 0
-        self.state.map_bearing = 0
+        self.state.map_latitude = DEFAULT_VIEW_STATE["latitude"]
+        self.state.map_longitude = DEFAULT_VIEW_STATE["longitude"]
+        self.state.map_zoom = DEFAULT_VIEW_STATE["zoom"]
+        self.state.map_pitch = DEFAULT_VIEW_STATE["pitch"]
+        self.state.map_bearing = DEFAULT_VIEW_STATE["bearing"]
 
         # File browser state
         data_root = Path(__file__).parent.parent.parent.parent / "data"
@@ -231,12 +238,11 @@ class MyTrameApp(TrameApp):
 
     def _load_data(self, folder_number, folder_path=None):
         """Load earthquake data from a folder"""
-        base_path = Path(__file__).parent.parent.parent.parent / "data"
         if folder_path is None:
             stored = getattr(self.state, f"folder_{folder_number}_full_path", "")
             folder_path = Path(stored) if stored else None
         if folder_path is None:
-            folder_path = base_path / "0000000157"
+            return
         folder_name = Path(folder_path)
 
         # Update folder display

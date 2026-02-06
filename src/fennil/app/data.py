@@ -6,13 +6,17 @@ import numpy as np
 import pandas as pd
 
 from .geo import (
+    DIP_EPS,
     KM2M,
     RADIUS_EARTH,
+    VERTICAL_DIP_DEG,
     calculate_fault_bottom_edge,
     cart2sph,
     wgs84_to_web_mercator,
     wrap2360,
 )
+
+PROJ_MESH_DIP_THRESHOLD_DEG = 75.0
 
 
 @dataclass
@@ -60,7 +64,7 @@ def build_fault_proj_data(segment):
         locking_depth = segment["locking_depth"].iloc[i]
         if not np.isfinite(dip_deg) or not np.isfinite(locking_depth):
             continue
-        if abs(dip_deg - 90.0) <= 1e-6:
+        if abs(dip_deg - VERTICAL_DIP_DEG) <= DIP_EPS:
             continue
 
         lon1 = segment["lon1"].iloc[i]
@@ -168,7 +172,7 @@ def build_tde_data(meshes):
         this_mesh_els = mesh_idx == i
         mesh_area[i] = np.mean(tri_area[this_mesh_els])
         this_mesh_dip = np.mean(dip[this_mesh_els])
-        if this_mesh_dip > 75:
+        if this_mesh_dip > PROJ_MESH_DIP_THRESHOLD_DEG:
             proj_mesh_flag[i] = 1
             dip_dir = np.mean(np.deg2rad(strike[this_mesh_els] + 90))
             lon1_mesh[this_mesh_els] += np.sin(dip_dir) * np.rad2deg(
