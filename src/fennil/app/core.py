@@ -38,9 +38,9 @@ HAS_MAPBOX_TOKEN = bool(mapbox_access_token)
 # ---------------------------------------------------------
 
 DEFAULT_VIEW_STATE = {
-    "latitude": 37.0,
-    "longitude": -122.0,
-    "zoom": 6,
+    "latitude": 35.0,
+    "longitude": -165.0,
+    "zoom": 2,
     "pitch": 0,
     "bearing": 0,
 }
