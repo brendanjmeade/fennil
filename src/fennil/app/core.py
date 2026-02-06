@@ -11,8 +11,10 @@ from trame.ui.vuetify3 import SinglePageLayout
 from trame.widgets import html, vuetify3
 from trame_deckgl.widgets import deckgl
 
-from .data import is_valid_data_folder, load_folder_data
+from .data import load_folder_data
+from .file_browser import FILE_BROWSER_HEADERS, FileBrowser
 from .layers import build_layers_for_folder
+from .state import FolderState
 
 
 def _load_mapbox_token():
@@ -46,11 +48,6 @@ DEFAULT_VIEW_STATE = {
 }
 VELOCITY_SCALE_MIN = 1.0e-6
 
-FILE_BROWSER_HEADERS = [
-    {"title": "Name", "align": "start", "key": "name", "sortable": False},
-    {"title": "Type", "align": "start", "key": "type", "sortable": False},
-]
-
 
 class MyTrameApp(TrameApp):
     def __init__(self, server=None):
@@ -73,39 +70,9 @@ class MyTrameApp(TrameApp):
         self.folder_1_data = None
         self.folder_2_data = None
 
-        # Visibility controls for folder 1
-        self.state.show_locs_1 = False
-        self.state.show_obs_1 = False
-        self.state.show_mod_1 = False
-        self.state.show_res_1 = False
-        self.state.show_rot_1 = False
-        self.state.show_seg_1 = False
-        self.state.show_tri_1 = False
-        self.state.show_str_1 = False
-        self.state.show_mog_1 = False
-        self.state.show_res_mag_1 = False
-        self.state.show_seg_color_1 = False
-        self.state.seg_slip_type_1 = "ss"
-        self.state.show_tde_1 = False
-        self.state.tde_slip_type_1 = "ss"
-        self.state.show_fault_proj_1 = False
-
-        # Visibility controls for folder 2
-        self.state.show_locs_2 = False
-        self.state.show_obs_2 = False
-        self.state.show_mod_2 = False
-        self.state.show_res_2 = False
-        self.state.show_rot_2 = False
-        self.state.show_seg_2 = False
-        self.state.show_tri_2 = False
-        self.state.show_str_2 = False
-        self.state.show_mog_2 = False
-        self.state.show_res_mag_2 = False
-        self.state.show_seg_color_2 = False
-        self.state.seg_slip_type_2 = "ss"
-        self.state.show_tde_2 = False
-        self.state.tde_slip_type_2 = "ss"
-        self.state.show_fault_proj_2 = False
+        # Visibility controls for folders
+        self.folder1 = FolderState(self.state, "folder1")
+        self.folder2 = FolderState(self.state, "folder2")
 
         # Shared controls
         self.state.show_res_compare = False
@@ -119,13 +86,8 @@ class MyTrameApp(TrameApp):
 
         # File browser state
         data_root = Path(__file__).parent.parent.parent.parent / "data"
-        self.state.show_file_browser = False
-        self.state.file_browser_target = 1
-        self.state.file_browser_current = str(data_root.resolve())
-        self.state.file_browser_listing = []
-        self.state.file_browser_active = -1
-        self.state.file_browser_error = ""
-        self.state.file_browser_headers = FILE_BROWSER_HEADERS
+        self.file_browser = FileBrowser(self.state, data_root=data_root)
+        self.file_browser.on_select = self._on_file_browser_select
         self.state.folder_1_full_path = ""
         self.state.folder_2_full_path = ""
         self.state.deckgl_tooltip = {
@@ -144,97 +106,14 @@ class MyTrameApp(TrameApp):
         self._build_ui()
 
         # Initialize file browser listing
-        self._file_browser_update_listing()
+        self.file_browser.update_listing()
 
     def _initialize_map(self, **kwargs):  # noqa: ARG002
         """Initialize the map with default view"""
         self.ctrl.deck_update(self._build_deck([]))
 
-    def _file_browser_update_listing(self):
-        current = Path(self.state.file_browser_current)
-        if not current.exists():
-            current = Path.home()
-            self.state.file_browser_current = str(current.resolve())
-        entries = []
-        for entry in current.iterdir():
-            name = entry.name
-            if name.startswith("."):
-                continue
-            if entry.is_dir():
-                entries.append(
-                    {
-                        "name": name,
-                        "type": "directory",
-                        "icon": "mdi-folder",
-                    }
-                )
-            elif entry.is_file():
-                entries.append(
-                    {
-                        "name": name,
-                        "type": "file",
-                        "icon": "mdi-file-document-outline",
-                    }
-                )
-        entries.sort(key=lambda item: (item["type"] != "directory", item["name"]))
-        listing = [{**item, "index": idx} for idx, item in enumerate(entries)]
-        with self.state:
-            self.state.file_browser_listing = listing
-            self.state.file_browser_active = -1
-
-    def _file_browser_select_entry(self, entry):
-        self.state.file_browser_active = entry.get("index", -1) if entry else -1
-
-    def _file_browser_open_entry(self, entry):
-        if not entry:
-            return
-        if entry.get("type") != "directory":
-            return
-        current = Path(self.state.file_browser_current)
-        next_path = (current / entry.get("name")).resolve()
-        self.state.file_browser_current = str(next_path)
-        self._file_browser_update_listing()
-
-    def _file_browser_go_home(self):
-        self.state.file_browser_current = str(Path.home().resolve())
-        self._file_browser_update_listing()
-
-    def _file_browser_go_parent(self):
-        current = Path(self.state.file_browser_current)
-        parent = current.parent if current.parent != current else current
-        self.state.file_browser_current = str(parent.resolve())
-        self._file_browser_update_listing()
-
-    def _file_browser_select_folder(self):
-        current = Path(self.state.file_browser_current)
-        folder_path = current
-        active_idx = self.state.file_browser_active
-        if active_idx is not None and active_idx >= 0:
-            if active_idx >= len(self.state.file_browser_listing):
-                active_idx = -1
-            else:
-                entry = self.state.file_browser_listing[active_idx]
-                if entry.get("type") == "directory":
-                    folder_path = (current / entry.get("name")).resolve()
-        if not is_valid_data_folder(folder_path):
-            self.state.file_browser_error = (
-                "Selected folder is missing required model_*.csv files."
-            )
-            return
-        self.state.file_browser_error = ""
-        target = int(self.state.file_browser_target)
-        self.state[f"folder_{target}_full_path"] = str(folder_path)
-        self.state.show_file_browser = False
-        self._load_data(target, folder_path=folder_path)
-
-    def _open_file_browser(self, folder_number):
-        self.state.file_browser_target = folder_number
-        existing = getattr(self.state, f"folder_{folder_number}_full_path", "")
-        if existing:
-            self.state.file_browser_current = str(Path(existing).resolve())
-        self.state.show_file_browser = True
-        self.state.file_browser_error = ""
-        self._file_browser_update_listing()
+    def _on_file_browser_select(self, folder_number, folder_path):
+        self._load_data(folder_number, folder_path=folder_path)
 
     def _load_data(self, folder_number, folder_path=None):
         """Load earthquake data from a folder"""
@@ -265,12 +144,14 @@ class MyTrameApp(TrameApp):
     @controller.set("load_folder_1")
     def load_folder_1(self):
         """Open file browser for folder 1"""
-        self._open_file_browser(1)
+        existing = self.state.folder_1_full_path
+        self.file_browser.open(1, existing)
 
     @controller.set("load_folder_2")
     def load_folder_2(self):
         """Open file browser for folder 2"""
-        self._open_file_browser(2)
+        existing = self.state.folder_2_full_path
+        self.file_browser.open(2, existing)
 
     def _update_layers(self):
         """Update DeckGL layers based on loaded data and visibility controls"""
@@ -281,7 +162,7 @@ class MyTrameApp(TrameApp):
         # Process folder 1 data
         if self.folder_1_data is not None:
             tde_layers, folder_layers, folder_vectors = build_layers_for_folder(
-                1, self.folder_1_data, self.state
+                1, self.folder_1_data, self.folder1, self.state
             )
             base_layers.extend(tde_layers)
             layers.extend(folder_layers)
@@ -290,7 +171,7 @@ class MyTrameApp(TrameApp):
         # Process folder 2 data
         if self.folder_2_data is not None:
             tde_layers, folder_layers, folder_vectors = build_layers_for_folder(
-                2, self.folder_2_data, self.state
+                2, self.folder_2_data, self.folder2, self.state
             )
             base_layers.extend(tde_layers)
             layers.extend(folder_layers)
@@ -391,34 +272,34 @@ class MyTrameApp(TrameApp):
         self._set_velocity_scale(self.state.velocity_scale * 2.0)
 
     @change(
-        "show_locs_1",
-        "show_obs_1",
-        "show_mod_1",
-        "show_res_1",
-        "show_rot_1",
-        "show_seg_1",
-        "show_tri_1",
-        "show_str_1",
-        "show_mog_1",
-        "show_seg_color_1",
-        "seg_slip_type_1",
-        "show_tde_1",
-        "tde_slip_type_1",
-        "show_fault_proj_1",
-        "show_locs_2",
-        "show_obs_2",
-        "show_mod_2",
-        "show_res_2",
-        "show_rot_2",
-        "show_seg_2",
-        "show_tri_2",
-        "show_str_2",
-        "show_mog_2",
-        "show_seg_color_2",
-        "seg_slip_type_2",
-        "show_tde_2",
-        "tde_slip_type_2",
-        "show_fault_proj_2",
+        "folder1_show_locs",
+        "folder1_show_obs",
+        "folder1_show_mod",
+        "folder1_show_res",
+        "folder1_show_rot",
+        "folder1_show_seg",
+        "folder1_show_tri",
+        "folder1_show_str",
+        "folder1_show_mog",
+        "folder1_show_seg_color",
+        "folder1_seg_slip_type",
+        "folder1_show_tde",
+        "folder1_tde_slip_type",
+        "folder1_show_fault_proj",
+        "folder2_show_locs",
+        "folder2_show_obs",
+        "folder2_show_mod",
+        "folder2_show_res",
+        "folder2_show_rot",
+        "folder2_show_seg",
+        "folder2_show_tri",
+        "folder2_show_str",
+        "folder2_show_mog",
+        "folder2_show_seg_color",
+        "folder2_seg_slip_type",
+        "folder2_show_tde",
+        "folder2_tde_slip_type",
+        "folder2_show_fault_proj",
     )
     def on_visibility_change(self, **kwargs):  # noqa: ARG002
         """Update visualization when visibility controls change"""
@@ -461,61 +342,61 @@ class MyTrameApp(TrameApp):
 
                                     # Velocity checkboxes
                                     vuetify3.VCheckbox(
-                                        v_model="show_locs_1",
+                                        v_model="folder1_show_locs",
                                         label="locs",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_obs_1",
+                                        v_model="folder1_show_obs",
                                         label="obs",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_mod_1",
+                                        v_model="folder1_show_mod",
                                         label="mod",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_res_1",
+                                        v_model="folder1_show_res",
                                         label="res",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_rot_1",
+                                        v_model="folder1_show_rot",
                                         label="rot",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_seg_1",
+                                        v_model="folder1_show_seg",
                                         label="seg",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_tri_1",
+                                        v_model="folder1_show_tri",
                                         label="tri",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_str_1",
+                                        v_model="folder1_show_str",
                                         label="str",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_mog_1",
+                                        v_model="folder1_show_mog",
                                         label="mog",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_res_mag_1",
+                                        v_model="folder1_show_res_mag",
                                         label="res mag",
                                         hide_details=True,
                                         density="compact",
@@ -525,13 +406,13 @@ class MyTrameApp(TrameApp):
 
                                     # Row 6: Segment/TDE color controls
                                     vuetify3.VCheckbox(
-                                        v_model="show_seg_color_1",
+                                        v_model="folder1_show_seg_color",
                                         label="slip",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     with vuetify3.VBtnToggle(
-                                        v_model="seg_slip_type_1",
+                                        v_model="folder1_seg_slip_type",
                                         mandatory=True,
                                         density="compact",
                                         divided=True,
@@ -540,13 +421,13 @@ class MyTrameApp(TrameApp):
                                         vuetify3.VBtn("ds", value="ds", size="x-small")
 
                                     vuetify3.VCheckbox(
-                                        v_model="show_tde_1",
+                                        v_model="folder1_show_tde",
                                         label="tde",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     with vuetify3.VBtnToggle(
-                                        v_model="tde_slip_type_1",
+                                        v_model="folder1_tde_slip_type",
                                         mandatory=True,
                                         density="compact",
                                         divided=True,
@@ -555,7 +436,7 @@ class MyTrameApp(TrameApp):
                                         vuetify3.VBtn("ds", value="ds", size="x-small")
 
                                     vuetify3.VCheckbox(
-                                        v_model="show_fault_proj_1",
+                                        v_model="folder1_show_fault_proj",
                                         label="fault proj",
                                         hide_details=True,
                                         density="compact",
@@ -583,61 +464,61 @@ class MyTrameApp(TrameApp):
 
                                     # Velocity checkboxes
                                     vuetify3.VCheckbox(
-                                        v_model="show_locs_2",
+                                        v_model="folder2_show_locs",
                                         label="locs",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_obs_2",
+                                        v_model="folder2_show_obs",
                                         label="obs",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_mod_2",
+                                        v_model="folder2_show_mod",
                                         label="mod",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_res_2",
+                                        v_model="folder2_show_res",
                                         label="res",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_rot_2",
+                                        v_model="folder2_show_rot",
                                         label="rot",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_seg_2",
+                                        v_model="folder2_show_seg",
                                         label="seg",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_tri_2",
+                                        v_model="folder2_show_tri",
                                         label="tri",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_str_2",
+                                        v_model="folder2_show_str",
                                         label="str",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_mog_2",
+                                        v_model="folder2_show_mog",
                                         label="mog",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     vuetify3.VCheckbox(
-                                        v_model="show_res_mag_2",
+                                        v_model="folder2_show_res_mag",
                                         label="res mag",
                                         hide_details=True,
                                         density="compact",
@@ -647,13 +528,13 @@ class MyTrameApp(TrameApp):
 
                                     # Row 6: Segment/TDE color controls
                                     vuetify3.VCheckbox(
-                                        v_model="show_seg_color_2",
+                                        v_model="folder2_show_seg_color",
                                         label="slip",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     with vuetify3.VBtnToggle(
-                                        v_model="seg_slip_type_2",
+                                        v_model="folder2_seg_slip_type",
                                         mandatory=True,
                                         density="compact",
                                         divided=True,
@@ -662,13 +543,13 @@ class MyTrameApp(TrameApp):
                                         vuetify3.VBtn("ds", value="ds", size="x-small")
 
                                     vuetify3.VCheckbox(
-                                        v_model="show_tde_2",
+                                        v_model="folder2_show_tde",
                                         label="tde",
                                         hide_details=True,
                                         density="compact",
                                     )
                                     with vuetify3.VBtnToggle(
-                                        v_model="tde_slip_type_2",
+                                        v_model="folder2_tde_slip_type",
                                         mandatory=True,
                                         density="compact",
                                         divided=True,
@@ -677,7 +558,7 @@ class MyTrameApp(TrameApp):
                                         vuetify3.VBtn("ds", value="ds", size="x-small")
 
                                     vuetify3.VCheckbox(
-                                        v_model="show_fault_proj_2",
+                                        v_model="folder2_show_fault_proj",
                                         label="fault proj",
                                         hide_details=True,
                                         density="compact",
@@ -788,7 +669,7 @@ class MyTrameApp(TrameApp):
                                 )
 
                 with vuetify3.VDialog(
-                    v_model=("show_file_browser", False),
+                    v_model=(self.file_browser.key("show"), False),
                     max_width="900",
                     persistent=True,
                 ):
@@ -799,16 +680,16 @@ class MyTrameApp(TrameApp):
                                     icon="mdi-home",
                                     variant="text",
                                     size="small",
-                                    click=self._file_browser_go_home,
+                                    click=self.file_browser.go_home,
                                 )
                                 vuetify3.VBtn(
                                     icon="mdi-folder-upload-outline",
                                     variant="text",
                                     size="small",
-                                    click=self._file_browser_go_parent,
+                                    click=self.file_browser.go_parent,
                                 )
                                 vuetify3.VTextField(
-                                    v_model=("file_browser_current", ""),
+                                    v_model=(self.file_browser.key("current"), ""),
                                     hide_details=True,
                                     density="compact",
                                     variant="outlined",
@@ -818,8 +699,11 @@ class MyTrameApp(TrameApp):
                             with vuetify3.VDataTable(
                                 density="compact",
                                 fixed_header=True,
-                                headers=("file_browser_headers", FILE_BROWSER_HEADERS),
-                                items=("file_browser_listing", []),
+                                headers=(
+                                    self.file_browser.key("headers"),
+                                    FILE_BROWSER_HEADERS,
+                                ),
+                                items=(self.file_browser.key("listing"), []),
                                 height="50vh",
                                 style="user-select: none; cursor: pointer;",
                                 items_per_page=-1,
@@ -831,11 +715,11 @@ class MyTrameApp(TrameApp):
                                     with vuetify3.VDataTableRow(
                                         item=("item",),
                                         click=(
-                                            self._file_browser_select_entry,
+                                            self.file_browser.select_entry,
                                             "[item]",
                                         ),
                                         dblclick=(
-                                            self._file_browser_open_entry,
+                                            self.file_browser.open_entry,
                                             "[item]",
                                         ),
                                         classes=(
@@ -869,11 +753,11 @@ class MyTrameApp(TrameApp):
                             vuetify3.VBtn(
                                 text="Cancel",
                                 variant="flat",
-                                click="show_file_browser=false",
+                                click="file_browser_show=false",
                             )
                             vuetify3.VBtn(
                                 text="Select folder",
                                 color="primary",
                                 variant="flat",
-                                click=self._file_browser_select_folder,
+                                click=self.file_browser.select_folder,
                             )

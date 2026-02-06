@@ -9,6 +9,7 @@ from .geo import (
     shift_polygon_df,
     web_mercator_to_wgs84,
 )
+from .state import FolderState
 
 VELOCITY_SCALE = 1000
 RED = [255, 0, 0, 255]
@@ -79,7 +80,9 @@ FAULT_LINE_STYLE = {
 }
 
 
-def build_layers_for_folder(folder_number, data: Dataset, state):
+def build_layers_for_folder(
+    folder_number, data: Dataset, folder_state: FolderState, state
+):
     """Create DeckGL layers for a specific folder's data."""
     tde_layers = []
     layers = []
@@ -99,7 +102,7 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
         "show_str",
         "show_mog",
     )
-    vis = {k: state[f"{k}_{folder_number}"] for k in vis_keys}
+    vis = {k: folder_state[k] for k in vis_keys}
 
     colors = TYPE_COLORS[folder_number]
     base_width = LINE_WIDTHS[folder_number]
@@ -290,7 +293,7 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             f"<b>Tensile-Slip Rate</b>: {format_number(ts_rate)}"
         )
 
-    if state[f"show_locs_{folder_number}"]:
+    if folder_state["show_locs"]:
         station_df = pd.DataFrame(
             {
                 "lon": station.lon.to_numpy(),
@@ -382,14 +385,14 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             base_width,
         )
 
-    show_tde = state[f"show_tde_{folder_number}"]
+    show_tde = folder_state["show_tde"]
     if show_tde:
         if not data.tde_available:
-            state[f"show_tde_{folder_number}"] = False
+            folder_state["show_tde"] = False
         else:
             tde_df = data.tde_df
             if tde_df is not None and not tde_df.empty:
-                tde_slip_type = state[f"tde_slip_type_{folder_number}"]
+                tde_slip_type = folder_state["tde_slip_type"]
                 if tde_slip_type == "ss":
                     slip_values = tde_df["ss_rate"].to_numpy()
                 else:
@@ -473,9 +476,9 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
         pickable=seg_tooltip_enabled,
     )
 
-    show_seg_color = state[f"show_seg_color_{folder_number}"]
+    show_seg_color = folder_state["show_seg_color"]
     if show_seg_color:
-        seg_slip_type = state[f"seg_slip_type_{folder_number}"]
+        seg_slip_type = folder_state["seg_slip_type"]
 
         required_cols = {
             "model_strike_slip_rate",
@@ -483,8 +486,8 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             "model_tensile_slip_rate",
         }
         if not required_cols.issubset(segment.columns):
-            if state[f"show_seg_color_{folder_number}"]:
-                state[f"show_seg_color_{folder_number}"] = False
+            if folder_state["show_seg_color"]:
+                folder_state["show_seg_color"] = False
             return tde_layers, layers, vector_layers
 
         if seg_slip_type == "ss":
@@ -519,10 +522,10 @@ def build_layers_for_folder(folder_number, data: Dataset, state):
             pickable=seg_tooltip_enabled,
         )
 
-    show_fault_proj = state[f"show_fault_proj_{folder_number}"]
+    show_fault_proj = folder_state["show_fault_proj"]
     if show_fault_proj:
         if not data.fault_proj_available:
-            state[f"show_fault_proj_{folder_number}"] = False
+            folder_state["show_fault_proj"] = False
         else:
             fault_proj_df = data.fault_proj_df
             if fault_proj_df is not None and not fault_proj_df.empty:
