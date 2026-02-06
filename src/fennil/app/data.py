@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -11,6 +13,25 @@ from .geo import (
     wgs84_to_web_mercator,
     wrap2360,
 )
+
+
+@dataclass
+class Dataset:
+    station: pd.DataFrame
+    segment: pd.DataFrame
+    meshes: pd.DataFrame
+    resmag: np.ndarray
+    x_station: np.ndarray
+    y_station: np.ndarray
+    x1_seg: np.ndarray
+    y1_seg: np.ndarray
+    x2_seg: np.ndarray
+    y2_seg: np.ndarray
+    tde_available: bool
+    tde_df: Optional[pd.DataFrame]
+    tde_perim_df: Optional[pd.DataFrame]
+    fault_proj_available: bool
+    fault_proj_df: Optional[pd.DataFrame]
 
 
 def is_valid_data_folder(folder_path):
@@ -266,20 +287,20 @@ def load_folder_data(folder_path):
     fault_proj_available, fault_proj_df = build_fault_proj_data(segment)
     tde_available, tde_df, tde_perim_df = build_tde_data(meshes)
 
-    return {
-        "station": station,
-        "segment": segment,
-        "meshes": meshes,
-        "resmag": resmag,
-        "x_station": x_station,
-        "y_station": y_station,
-        "x1_seg": x1_seg,
-        "y1_seg": y1_seg,
-        "x2_seg": x2_seg,
-        "y2_seg": y2_seg,
-        "tde_available": tde_available,
-        "tde_df": tde_df,
-        "tde_perim_df": tde_perim_df,
-        "fault_proj_available": fault_proj_available,
-        "fault_proj_df": fault_proj_df,
-    }
+    return Dataset(
+        station=station,
+        segment=segment,
+        meshes=meshes,
+        resmag=resmag,
+        x_station=x_station,
+        y_station=y_station,
+        x1_seg=x1_seg,
+        y1_seg=y1_seg,
+        x2_seg=x2_seg,
+        y2_seg=y2_seg,
+        tde_available=tde_available,
+        tde_df=tde_df,
+        tde_perim_df=tde_perim_df,
+        fault_proj_available=fault_proj_available,
+        fault_proj_df=fault_proj_df,
+    )

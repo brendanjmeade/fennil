@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pydeck as pdk
 
+from .data import Dataset
 from .geo import (
     normalize_longitude_difference,
     shift_longitudes_df,
@@ -74,14 +75,14 @@ FAULT_LINE_STYLE = {
 }
 
 
-def build_layers_for_folder(folder_number, data, state):
+def build_layers_for_folder(folder_number, data: Dataset, state):
     """Create DeckGL layers for a specific folder's data."""
     tde_layers = []
     layers = []
     vector_layers = []
-    station = data["station"]
-    x_station = data["x_station"]
-    y_station = data["y_station"]
+    station = data.station
+    x_station = data.x_station
+    y_station = data.y_station
 
     vis_keys = (
         "show_locs",
@@ -379,10 +380,10 @@ def build_layers_for_folder(folder_number, data, state):
 
     show_tde = state[f"show_tde_{folder_number}"]
     if show_tde:
-        if not data.get("tde_available", False):
+        if not data.tde_available:
             state[f"show_tde_{folder_number}"] = False
         else:
-            tde_df = data.get("tde_df")
+            tde_df = data.tde_df
             if tde_df is not None and not tde_df.empty:
                 tde_slip_type = state[f"tde_slip_type_{folder_number}"]
                 if tde_slip_type == "ss":
@@ -403,7 +404,7 @@ def build_layers_for_folder(folder_number, data, state):
                     layer_list=tde_layers,
                 )
 
-            tde_perim_df = data.get("tde_perim_df")
+            tde_perim_df = data.tde_perim_df
             if tde_perim_df is not None and not tde_perim_df.empty:
                 tde_perim_df = tde_perim_df.copy()
                 tde_perim_df["color"] = [
@@ -422,7 +423,7 @@ def build_layers_for_folder(folder_number, data, state):
 
     seg_tooltip_enabled = folder_number == 1
 
-    segment = data["segment"]
+    segment = data.segment
     fault_lines_df = pd.DataFrame(
         {
             "start_lon": segment.lon1.to_numpy(),
@@ -516,10 +517,10 @@ def build_layers_for_folder(folder_number, data, state):
 
     show_fault_proj = state[f"show_fault_proj_{folder_number}"]
     if show_fault_proj:
-        if not data.get("fault_proj_available", False):
+        if not data.fault_proj_available:
             state[f"show_fault_proj_{folder_number}"] = False
         else:
-            fault_proj_df = data.get("fault_proj_df")
+            fault_proj_df = data.fault_proj_df
             if fault_proj_df is not None and not fault_proj_df.empty:
                 style = FAULT_PROJ_STYLE[folder_number]
                 add_polygon_layer(
