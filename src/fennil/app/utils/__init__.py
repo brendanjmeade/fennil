@@ -1,4 +1,5 @@
 from .data import (
+    PROJ_MESH_DIP_THRESHOLD_DEG,
     Dataset,
     build_fault_proj_data,
     build_tde_data,
@@ -8,7 +9,6 @@ from .data import (
 from .geo import (
     DIP_EPS,
     KM2M,
-    PROJ_MESH_DIP_THRESHOLD_DEG,
     SHIFT_LON,
     VERTICAL_DIP_DEG,
     WEB_MERCATOR_RADIUS,
