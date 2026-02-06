@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from .data import is_valid_data_folder
+from trame.widgets import html, vuetify3
+
+from ..data import is_valid_data_folder
 
 FILE_BROWSER_HEADERS = [
     {"title": "Name", "align": "start", "key": "name", "sortable": False},
@@ -118,3 +120,81 @@ class FileBrowser:
         target = int(self.get("target"))
         if self.on_select:
             self.on_select(target, folder_path)
+
+    def ui(self):
+        with vuetify3.VDialog(
+            v_model=(self.key("show"), False),
+            max_width="900",
+            persistent=True,
+        ):
+            with vuetify3.VCard(title="Select data folder", rounded="lg"):
+                with vuetify3.VCardText():
+                    with vuetify3.VRow(dense=True, classes="align-center"):
+                        vuetify3.VBtn(
+                            icon="mdi-home",
+                            variant="text",
+                            size="small",
+                            click=self.go_home,
+                        )
+                        vuetify3.VBtn(
+                            icon="mdi-folder-upload-outline",
+                            variant="text",
+                            size="small",
+                            click=self.go_parent,
+                        )
+                        vuetify3.VTextField(
+                            v_model=(self.key("current"), ""),
+                            hide_details=True,
+                            density="compact",
+                            variant="outlined",
+                            readonly=True,
+                            classes="ml-2 flex-grow-1",
+                        )
+                    with vuetify3.VDataTable(
+                        density="compact",
+                        fixed_header=True,
+                        headers=(self.key("headers"), FILE_BROWSER_HEADERS),
+                        items=(self.key("listing"), []),
+                        height="50vh",
+                        style="user-select: none; cursor: pointer;",
+                        items_per_page=-1,
+                    ):
+                        vuetify3.Template(raw_attrs=["v-slot:bottom"])
+                        with vuetify3.Template(raw_attrs=['v-slot:item="{ item }"']):
+                            with vuetify3.VDataTableRow(
+                                item=("item",),
+                                click=(self.select_entry, "[item]"),
+                                dblclick=(self.open_entry, "[item]"),
+                                classes=(
+                                    f"{{ 'bg-grey-lighten-3': item.index === {self.key('active')} }}",
+                                ),
+                            ):
+                                with vuetify3.Template(raw_attrs=["v-slot:item.name"]):
+                                    with html.Div(classes="d-flex align-center"):
+                                        vuetify3.VIcon(
+                                            "{{ item.icon }}",
+                                            size="small",
+                                            classes="mr-2",
+                                        )
+                                        html.Div("{{ item.name }}")
+                                with vuetify3.Template(raw_attrs=["v-slot:item.type"]):
+                                    html.Div("{{ item.type }}")
+
+                with vuetify3.VCardActions(classes="pa-3"):
+                    html.Div(
+                        f"{{{{ {self.key('error')} }}}}",
+                        v_if=self.key("error"),
+                        classes="text-error text-caption",
+                    )
+                    vuetify3.VSpacer()
+                    vuetify3.VBtn(
+                        text="Cancel",
+                        variant="flat",
+                        click=f"{self.key('show')}=false",
+                    )
+                    vuetify3.VBtn(
+                        text="Select folder",
+                        color="primary",
+                        variant="flat",
+                        click=self.select_folder,
+                    )

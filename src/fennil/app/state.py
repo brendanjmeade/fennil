@@ -1,5 +1,30 @@
 from typing import ClassVar
 
+from trame_dataclass.core import StateDataModel
+
+DEFAULT_VIEW_STATE = {
+    "latitude": 35.0,
+    "longitude": -165.0,
+    "zoom": 2,
+    "pitch": 0,
+    "bearing": 0,
+}
+
+
+class AppState(StateDataModel):
+    velocity_scale: float = 1.0
+    velocity_scale_display: str = "1"
+    folder_1_path: str = "---"
+    folder_2_path: str = "---"
+    folder_1_full_path: str = ""
+    folder_2_full_path: str = ""
+    show_res_compare: bool = False
+    map_latitude: float = DEFAULT_VIEW_STATE["latitude"]
+    map_longitude: float = DEFAULT_VIEW_STATE["longitude"]
+    map_zoom: float = DEFAULT_VIEW_STATE["zoom"]
+    map_pitch: float = DEFAULT_VIEW_STATE["pitch"]
+    map_bearing: float = DEFAULT_VIEW_STATE["bearing"]
+
 
 class FolderState:
     DEFAULTS: ClassVar[dict[str, object]] = {
