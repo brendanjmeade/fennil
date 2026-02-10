@@ -1,8 +1,8 @@
-from .core import MyTrameApp
+from .core import FennilApp
 
 
 def main(server=None, **kwargs):
-    app = MyTrameApp(server)
+    app = FennilApp(server)
     app.server.start(**kwargs)
 
 

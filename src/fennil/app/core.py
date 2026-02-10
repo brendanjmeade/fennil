@@ -12,7 +12,7 @@ from trame.widgets import dataclass, html, vuetify3
 from trame_deckgl.widgets import deckgl
 
 from .components import FileBrowser, folder_controls, velocity_scale_controls
-from .layers import build_layers_for_folder
+from .deck import build_layers_for_folder
 from .state import AppState, FolderState
 from .utils import load_folder_data
 
@@ -42,7 +42,7 @@ HAS_MAPBOX_TOKEN = bool(mapbox_access_token)
 VELOCITY_SCALE_MIN = 1.0e-6
 
 
-class MyTrameApp(TrameApp):
+class FennilApp(TrameApp):
     def __init__(self, server=None):
         super().__init__(server, client_type="vue3")
 
