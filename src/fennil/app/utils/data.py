@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -32,10 +31,10 @@ class Dataset:
     x2_seg: np.ndarray
     y2_seg: np.ndarray
     tde_available: bool
-    tde_df: Optional[pd.DataFrame]
-    tde_perim_df: Optional[pd.DataFrame]
+    tde_df: pd.DataFrame | None
+    tde_perim_df: pd.DataFrame | None
     fault_proj_available: bool
-    fault_proj_df: Optional[pd.DataFrame]
+    fault_proj_df: pd.DataFrame | None
 
 
 def is_valid_data_folder(folder_path):

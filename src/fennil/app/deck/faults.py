@@ -48,6 +48,7 @@ def fault_line_layers(folder_number, segment, seg_tooltip_enabled):
                 segment.model_strike_slip_rate.to_numpy(),
                 segment.model_dip_slip_rate.to_numpy(),
                 segment.model_tensile_slip_rate.to_numpy(),
+                strict=False,
             )
         ]
 
