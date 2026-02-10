@@ -129,7 +129,7 @@ class FileBrowser:
         ):
             with vuetify3.VCard(title="Select data folder", rounded="lg"):
                 with vuetify3.VCardText():
-                    with vuetify3.VRow(dense=True, classes="align-center"):
+                    with vuetify3.VRow(dense=True, classes="pb-1 align-center"):
                         vuetify3.VBtn(
                             icon="mdi-home",
                             variant="text",
