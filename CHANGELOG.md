@@ -55,7 +55,6 @@
 - Split UI into components/ dir
   ([`1ec69df`](https://github.com/brendanjmeade/fennil/commit/1ec69df345d4601e55a2b3487688112393a69759))
 
-
 ## v1.2.0 (2026-02-03)
 
 ### Bug Fixes
