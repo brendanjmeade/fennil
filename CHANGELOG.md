@@ -23,7 +23,6 @@
 - Add tooltip
   ([`d10c0ce`](https://github.com/brendanjmeade/fennil/commit/d10c0ce4be27adc9701c4a0cdfd0932a65a2989f))
 
-
 ## v1.1.0 (2026-01-30)
 
 ### Features
