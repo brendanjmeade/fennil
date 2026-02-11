@@ -14,7 +14,7 @@ dependencies = [
     "trame-dataclass",
     "pydeck",
     "numpy",
-    "pandas",
+    "pandas<3",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -34,9 +34,6 @@ classifiers = [
 [project.optional-dependencies]
 app = [
     "pywebview",
-]
-jupyter = [
-    "jupyterlab",
 ]
 dev = [
     "pre-commit",
