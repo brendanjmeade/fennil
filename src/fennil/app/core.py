@@ -11,10 +11,11 @@ from trame.ui.vuetify3 import SinglePageLayout
 from trame.widgets import dataclass, html, vuetify3
 from trame_deckgl.widgets import deckgl
 
+from fennil.app.io import load_folder_data
+
 from .components import FileBrowser, folder_controls, velocity_scale_controls
 from .deck import build_layers_for_folder
 from .state import AppState, FolderState
-from .utils import load_folder_data
 
 
 def _load_mapbox_token():

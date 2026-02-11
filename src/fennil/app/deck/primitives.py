@@ -1,6 +1,6 @@
 import pydeck as pdk
 
-from ..utils.geo import shift_longitudes_df, shift_polygon_df
+from fennil.app.geo_projs import shift_longitudes_df, shift_polygon_df
 
 
 def line_layers(

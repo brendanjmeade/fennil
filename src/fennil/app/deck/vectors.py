@@ -1,6 +1,7 @@
 import pandas as pd
 
-from ..utils.geo import normalize_longitude_difference, web_mercator_to_wgs84
+from fennil.app.geo_projs import normalize_longitude_difference, web_mercator_to_wgs84
+
 from .primitives import line_layers
 from .styles import VELOCITY_SCALE
 

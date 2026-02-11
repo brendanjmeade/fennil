@@ -2,7 +2,7 @@ from pathlib import Path
 
 from trame.widgets import html, vuetify3
 
-from ..utils import is_valid_data_folder
+from fennil.app.io import is_valid_data_folder
 
 FILE_BROWSER_HEADERS = [
     {"title": "Name", "align": "start", "key": "name", "sortable": False},

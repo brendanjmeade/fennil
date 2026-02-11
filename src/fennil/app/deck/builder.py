@@ -1,5 +1,6 @@
+from fennil.app.io import Dataset
+
 from ..state import FolderState
-from ..utils import Dataset
 from .faults import (
     REQUIRED_SEG_COLS,
     fault_line_layers,
