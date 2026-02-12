@@ -23,112 +23,22 @@ class MapSettings(StateDataModel):
 class DatasetVisualization(StateDataModel):
     enabled: bool = False
     name: str
-    fields: list
+    fields: dict[str, bool | str | None]
     available_fields: list[str]
+    colors: dict[str, list[int]] | None
 
     def attach_data(self, directory_path, data, colors):
+        from .fields import FIELD_REGISTRY
+
         self._data = data
 
         self.name = ""
         self.enabled = bool(data)
         if data:
             self.name = Path(directory_path).stem.lstrip("0")
-            self.available_fields = [
-                "locs",
-                "obs",
-                "mod",
-                "res",
-                "rot",
-                "seg",
-                "tri",
-                "str",
-                "mog",
-                "slip",
-                "tde",
-                "fault proj",
-            ]
-            self.fields = {
-                "locs": {
-                    "color": colors["loc"],
-                    "icon": "mdi-circle-medium",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "obs": {
-                    "color": colors["obs"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "mod": {
-                    "color": colors["mod"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "res": {
-                    "color": colors["res"],
-                    "icon": "mdi-vector-line",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "rot": {
-                    "color": colors["rot"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "seg": {
-                    "color": colors["seg"],
-                    "icon": "mdi-gesture",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "fault proj": {
-                    "color": (128, 128, 128, 255),
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "tde": {
-                    "color": colors["tde"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VBtnToggle",
-                    "value": None,
-                    "options": [
-                        {"text": "SS", "value": "ss"},
-                        {"text": "DS", "value": "ds"},
-                    ],
-                },
-                "slip": {
-                    "color": colors["tde"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VBtnToggle",
-                    "value": None,
-                    "options": [
-                        {"text": "SS", "value": "ss"},
-                        {"text": "DS", "value": "ds"},
-                    ],
-                },
-                "tri": {
-                    "color": colors["tde"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "str": {
-                    "color": colors["str"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-                "mog": {
-                    "color": colors["mog"],
-                    "icon": "mdi-square-rounded",
-                    "type": "VCheckbox",
-                    "value": False,
-                },
-            }
+            self.available_fields = FIELD_REGISTRY.names()
+            self.fields = FIELD_REGISTRY.defaults()
+            self.colors = colors
 
     @property
     def data(self):
@@ -136,6 +46,9 @@ class DatasetVisualization(StateDataModel):
 
     def clear(self):
         self.enabled = False
+        self.fields = {}
+        self.available_fields = []
+        self.colors = None
 
 
 class AppState(StateDataModel):

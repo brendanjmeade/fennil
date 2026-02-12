@@ -10,6 +10,7 @@ from fennil.app.io import load_folder_data
 from .components import FileBrowser, Scale
 from .deck import build_deck, build_layers_dataset, mapbox
 from .deck.styles import TYPE_COLORS
+from .fields import FIELD_REGISTRY
 from .state import DatasetVisualization, MapSettings
 
 
@@ -29,6 +30,7 @@ class FennilApp(TrameApp):
         self.map_params = MapSettings(self.server)
         for viz_config in self._datasets:
             viz_config.watch(["fields", "enabled"], self._update_layers)
+        self.state.field_specs = FIELD_REGISTRY.export_specs()
 
         # build ui
         self._build_ui()
@@ -68,7 +70,7 @@ class FennilApp(TrameApp):
     def update_dataset_config(self, id, name, value):
         """Keep server in sync with client reactive nested structure"""
         state = get_instance(id)
-        state.fields = {**state.fields, name: {**state.fields[name], "value": value}}
+        state.fields = {**state.fields, name: value}
 
     def _build_ui(self, **_):
         self.state.trame__title = "Earthquake Data Viewer"
@@ -161,13 +163,13 @@ class FennilApp(TrameApp):
                                         with html.Td():
                                             with html.Div(
                                                 classes="d-flex align-center",
-                                                v_if="first.fields[name]",
+                                                v_if="field_specs[name]",
                                             ):
                                                 v3.VIcon(
                                                     classes="mr-1",
-                                                    icon=["first.fields[name]?.icon"],
+                                                    icon=["field_specs[name]?.icon"],
                                                     color=[
-                                                        "`rgba(${first.fields[name].color[0]}, ${first.fields[name].color[1]}, ${first.fields[name].color[2]}, ${first.fields[name].color[3] / 255})`"
+                                                        "`rgba(${(field_specs[name].color || first.colors[field_specs[name].color_key])[0]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[1]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[2]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[3] / 255})`"
                                                     ],
                                                 )
                                                 v3.VLabel(
@@ -184,18 +186,18 @@ class FennilApp(TrameApp):
                                                 v_if="data.enabled",
                                             ):
                                                 v3.VCheckbox(
-                                                    v_if="data.fields[name]?.type === 'VCheckbox'",
-                                                    v_model="data.fields[name].value",
+                                                    v_if="field_specs[name]?.type === 'VCheckbox'",
+                                                    v_model="data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",
                                                     update_modelValue=(
                                                         self.update_dataset_config,
-                                                        "[data._id, name, data.fields[name].value]",
+                                                        "[data._id, name, data.fields[name]]",
                                                     ),
                                                 )
                                                 with v3.VBtnToggle(
-                                                    v_if="data.fields[name]?.type === 'VBtnToggle'",
-                                                    v_model="data.fields[name].value",
+                                                    v_if="field_specs[name]?.type === 'VBtnToggle'",
+                                                    v_model="data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",
                                                     rounded="md",
@@ -204,11 +206,11 @@ class FennilApp(TrameApp):
                                                     style="height: 24px;",
                                                     update_modelValue=(
                                                         self.update_dataset_config,
-                                                        "[data._id, name, data.fields[name].value]",
+                                                        "[data._id, name, data.fields[name]]",
                                                     ),
                                                 ):
                                                     v3.VBtn(
-                                                        v_for="props, i in data.fields[name].options",
+                                                        v_for="props, i in field_specs[name].options",
                                                         key="i",
                                                         size=24,
                                                         density="compact",
@@ -221,15 +223,15 @@ class FennilApp(TrameApp):
                                 classes="pa-0 d-flex flex-column align-center",
                             ):
                                 v3.VChip(
-                                    "{{name}} {{ typeof first.fields[name].value === 'string' ? first.fields[name].value.toUpperCase() : null }}",
+                                    "{{name}} {{ typeof first.fields[name] === 'string' ? first.fields[name].toUpperCase() : null }}",
                                     label=True,
                                     classes="text-capitalize my-1",
                                     v_for="name, i in first.available_fields",
                                     key="i",
-                                    v_show="first.fields[name].value",
+                                    v_show="first.fields[name]",
                                     size="x-small",
                                     color=[
-                                        "`rgba(${first.fields[name].color[0]}, ${first.fields[name].color[1]}, ${first.fields[name].color[2]}, ${first.fields[name].color[3] / 255})`"
+                                        "`rgba(${(field_specs[name].color || first.colors[field_specs[name].color_key])[0]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[1]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[2]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[3] / 255})`"
                                     ],
                                 )
 
