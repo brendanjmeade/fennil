@@ -2,10 +2,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .faults import REQUIRED_SEG_COLS, fault_projection_layers, segment_color_layers
-from .stations import station_layers
-from .tde import tde_mesh_layers, tde_perimeter_layers
-from .vectors import velocity_layers
+from .deck.faults import (
+    REQUIRED_SEG_COLS,
+    fault_projection_layers,
+    segment_color_layers,
+)
+from .deck.stations import station_layers
+from .deck.tde import tde_mesh_layers, tde_perimeter_layers
+from .deck.vectors import velocity_layers
 
 
 @dataclass(frozen=True)
