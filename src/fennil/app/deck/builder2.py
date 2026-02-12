@@ -2,8 +2,10 @@ import pydeck as pdk
 
 from . import mapbox
 from .faults import (
+    REQUIRED_SEG_COLS,
     fault_line_layers,
     fault_projection_layers,
+    segment_color_layers,
 )
 from .stations import station_layers
 from .tde import tde_mesh_layers, tde_perimeter_layers
@@ -191,32 +193,28 @@ def build_layers_dataset(config, ds_index, velocity_scale=1):
                 slip_values = tde_df["ss_rate"].to_numpy()
             else:
                 slip_values = tde_df["ds_rate"].to_numpy()
-                tde_layers.extend(tde_mesh_layers(folder_number, tde_df, slip_values))
+            tde_layers.extend(tde_mesh_layers(folder_number, tde_df, slip_values))
 
         tde_layers.extend(tde_perimeter_layers(folder_number, data.tde_perim_df))
 
     seg_tooltip_enabled = not ds_index
 
-    fault_layers, _ = fault_line_layers(
+    fault_layers, fault_lines_df = fault_line_layers(
         folder_number, data.segment, seg_tooltip_enabled
     )
     layers.extend(fault_layers)
 
-    # if folder_state["show_seg_color"]:
-    #     if not REQUIRED_SEG_COLS.issubset(data.segment.columns):
-    #         folder_state["show_seg_color"] = False
-    #         return tde_layers, layers, vector_layers
-
-    #     seg_slip_type = folder_state["seg_slip_type"]
-    #     layers.extend(
-    #         segment_color_layers(
-    #             folder_number,
-    #             data.segment,
-    #             seg_slip_type,
-    #             seg_tooltip_enabled,
-    #             fault_lines_df,
-    #         )
-    #     )
+    slip_type = show(fields, "slip")
+    if slip_type and REQUIRED_SEG_COLS.issubset(data.segment.columns):
+        layers.extend(
+            segment_color_layers(
+                folder_number,
+                data.segment,
+                slip_type,
+                seg_tooltip_enabled,
+                fault_lines_df,
+            )
+        )
 
     if show(fields, "fault proj") and data.fault_proj_available:
         layers.extend(fault_projection_layers(folder_number, data.fault_proj_df))
