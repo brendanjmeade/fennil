@@ -1,4 +1,4 @@
-from .core import FennilApp
+from .core2 import FennilApp
 
 
 def main(server=None, **kwargs):

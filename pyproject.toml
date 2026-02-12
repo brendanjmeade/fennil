@@ -9,7 +9,6 @@ authors = [
 dependencies = [
     "trame>=3.12",
     "trame-vuetify",
-    "trame-vtk",
     "trame-deckgl>=2.0.4",
     "trame-dataclass",
     "pydeck",
