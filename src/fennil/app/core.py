@@ -8,12 +8,14 @@ import pydeck as pdk
 from trame.app import TrameApp
 from trame.decorators import change, controller
 from trame.ui.vuetify3 import SinglePageLayout
-from trame.widgets import dataclass, html, vuetify3
+from trame.widgets import html
+from trame.widgets import vuetify3 as v3
 from trame_deckgl.widgets import deckgl
 
 from fennil.app.io import load_folder_data
 
-from .components import FileBrowser, folder_controls, velocity_scale_controls
+from .components import folder_controls, velocity_scale_controls
+from .components.file_browser_origin import FileBrowser
 from .deck import build_layers_for_folder
 from .state import AppState, FolderState
 
@@ -51,10 +53,7 @@ class FennilApp(TrameApp):
         if self.server.hot_reload:
             self.server.controller.on_server_reload.add(self._build_ui)
 
-        dataclass.initialize(self.server)
-
         # Initialize state variables
-        self.state.trame__title = "Earthquake Data Viewer"
         self.app_state = AppState(self.server)
         self.app_state.velocity_scale_display = self._format_velocity_scale(
             self.app_state.velocity_scale
@@ -287,20 +286,16 @@ class FennilApp(TrameApp):
             # Main content - recreating Panel GridSpec layout
             with self.ui.content:
                 with self.app_state.provide_as("app"):
-                    with vuetify3.VContainer(
+                    with v3.VContainer(
                         fluid=True,
                         classes="pa-0 fill-height",
                         style="max-height: 700px;",
                     ):
                         # Main grid: controls area + large map area
-                        with vuetify3.VRow(classes="fill-height", no_gutters=True):
+                        with v3.VRow(classes="fill-height", no_gutters=True):
                             # LEFT AREA - Controls (two columns + shared row)
-                            with vuetify3.VCol(
-                                cols=3, classes="pa-0 d-flex flex-column"
-                            ):
-                                with vuetify3.VRow(
-                                    classes="flex-grow-1", no_gutters=True
-                                ):
+                            with v3.VCol(cols=3, classes="pa-0 d-flex flex-column"):
+                                with v3.VRow(classes="flex-grow-1", no_gutters=True):
                                     folder_controls(
                                         "folder1",
                                         self.load_folder_1,
@@ -312,11 +307,11 @@ class FennilApp(TrameApp):
                                         "app.folder_2_path",
                                     )
 
-                                vuetify3.VDivider(classes="my-1")
+                                v3.VDivider(classes="my-1")
 
                                 # Shared controls row (full width of controls area)
                                 with html.Div(classes="pa-2"):
-                                    vuetify3.VCheckbox(
+                                    v3.VCheckbox(
                                         v_model="app.show_res_compare",
                                         label="res compare",
                                         hide_details=True,
@@ -332,11 +327,9 @@ class FennilApp(TrameApp):
                                     )
 
                             # RIGHT LARGE AREA - Map and Colorbars
-                            with vuetify3.VCol(
-                                cols=9, classes="pa-0 d-flex flex-column"
-                            ):
+                            with v3.VCol(cols=9, classes="pa-0 d-flex flex-column"):
                                 # Main map area (rows 0-8)
-                                with vuetify3.VCard(
+                                with v3.VCard(
                                     classes="flex-grow-1",
                                     style="min-height: 0; position: relative;",
                                 ):
@@ -359,7 +352,7 @@ class FennilApp(TrameApp):
                                         self._ready_registered = True
 
                                 # Colorbar area (row 8)
-                                with vuetify3.VCard(
+                                with v3.VCard(
                                     classes=(
                                         "pa-2 d-flex justify-space-around align-center"
                                     ),
