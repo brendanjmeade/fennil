@@ -4,33 +4,38 @@ from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
     priority=21,
+    label="TDE",
     icon="mdi-texture-box",
     ui_type="VBtnToggle",
-    color_key="tde",
     options=[
         {"text": "SS", "value": "ss"},
         {"text": "DS", "value": "ds"},
     ],
     default=None,
+    styles={
+        "icon_color": "rgba(14, 0, 214, 1)",
+    },
 )
 
 
-def builder(ctx: LayerContext, value):
-    if not value:
+def builder(name: str, ctx: LayerContext):
+    if ctx.skip(name):
         return
-    data = ctx.config.data
-    if not data.tde_available:
-        return
-    tde_df = data.tde_df
-    if tde_df is not None and not tde_df.empty:
-        slip_values = (
-            tde_df["ss_rate"].to_numpy()
-            if value == "ss"
-            else tde_df["ds_rate"].to_numpy()
-        )
-        ctx.tde_layers.extend(tde_mesh_layers(ctx.folder_number, tde_df, slip_values))
-    ctx.tde_layers.extend(tde_perimeter_layers(ctx.folder_number, data.tde_perim_df))
+
+    for idx, dataset in ctx.enabled_datasets(name):
+        folder_number = idx + 1
+        value = dataset.fields[name]
+        tde_df = dataset.data.tde_df
+        tde_perim_df = dataset.data.tde_perim_df
+        if tde_df is not None and not tde_df.empty:
+            slip_values = (
+                tde_df["ss_rate"].to_numpy()
+                if value == "ss"
+                else tde_df["ds_rate"].to_numpy()
+            )
+            ctx.tde_layers.extend(tde_mesh_layers(folder_number, tde_df, slip_values))
+        ctx.tde_layers.extend(tde_perimeter_layers(folder_number, tde_perim_df))
 
 
 def can_render(dataset: Dataset) -> bool:
-    return dataset is not None
+    return dataset is not None and dataset.tde_available

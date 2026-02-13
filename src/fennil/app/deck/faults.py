@@ -4,7 +4,6 @@ from .primitives import line_layers, polygon_layers
 from .styles import (
     FAULT_LINE_STYLE,
     FAULT_PROJ_LINE_WIDTH,
-    FAULT_PROJ_STYLE,
     SEGMENT_LINE_WIDTH,
     map_slip_colors,
 )
@@ -105,16 +104,15 @@ def segment_color_layers(
     )
 
 
-def fault_projection_layers(folder_number, fault_proj_df):
+def fault_projection_layers(name, fault_proj_df, fill, line):
     if fault_proj_df is None or fault_proj_df.empty:
         return []
-    style = FAULT_PROJ_STYLE[folder_number]
     return polygon_layers(
         "fault_proj",
         fault_proj_df,
-        style["fill"],
-        style["line"],
+        fill,
+        line,
         FAULT_PROJ_LINE_WIDTH,
-        folder_number,
+        name,
         pickable=False,
     )

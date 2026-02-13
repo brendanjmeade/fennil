@@ -2,6 +2,8 @@ from pathlib import Path
 
 from trame_dataclass.core import StateDataModel
 
+from fennil.app.registry import FIELD_REGISTRY
+
 DEFAULT_VIEW_STATE = {
     "latitude": 35.0,
     "longitude": -165.0,
@@ -24,20 +26,15 @@ class DatasetVisualization(StateDataModel):
     name: str
     fields: dict[str, bool | str | None]
     available_fields: list[str]
-    colors: dict[str, list[int]] | None
 
-    def attach_data(self, directory_path, data, colors):
-        from .registry import FIELD_REGISTRY
-
+    def attach_data(self, directory_path, data):
         self._data = data
-
         self.name = ""
         self.enabled = bool(data)
         if data:
             self.name = Path(directory_path).stem.lstrip("0")
             self.available_fields = FIELD_REGISTRY.available_fields(data)
             self.fields = FIELD_REGISTRY.field_defaults()
-            self.colors = colors
 
     @property
     def data(self):
@@ -47,4 +44,3 @@ class DatasetVisualization(StateDataModel):
         self.enabled = False
         self.fields = {}
         self.available_fields = []
-        self.colors = None

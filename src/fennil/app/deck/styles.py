@@ -6,33 +6,6 @@ BLACK = [0, 0, 0, 255]
 SEGMENT_LINE_WIDTH = 3
 FAULT_PROJ_LINE_WIDTH = 1
 
-# Per-layer colors (RGBA) and per-folder line widths, mirroring the legacy viewer
-TYPE_COLORS = {
-    1: {
-        "obs": [0, 0, 205, 255],
-        "mod": [205, 0, 0, 200],
-        "res": [205, 0, 205, 200],
-        "rot": [0, 205, 0, 200],
-        "seg": [0, 205, 205, 200],
-        "tde": [205, 133, 0, 200],
-        "str": [0, 128, 128, 200],
-        "mog": [128, 128, 128, 200],
-        "loc": [0, 0, 0, 220],
-    },
-    2: {
-        "obs": [0, 0, 205, 255],
-        "mod": [205, 0, 0, 200],
-        "res": [205, 0, 205, 200],
-        "rot": [0, 205, 0, 200],
-        "seg": [0, 205, 205, 200],
-        "tde": [205, 133, 0, 200],
-        "str": [0, 102, 102, 200],
-        "mog": [102, 102, 102, 200],
-        "loc": [0, 0, 0, 220],
-    },
-}
-
-LINE_WIDTHS = {1: 1, 2: 2}
 
 # ColorBrewer RdBu[11] palette for discrete slip-rate coloring
 RDBU_11 = [

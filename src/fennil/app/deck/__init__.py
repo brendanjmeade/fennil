@@ -1,8 +1,7 @@
 from . import mapbox
-from .builder import build_deck, build_layers_dataset
+from .builder import build_deck
 
 __all__ = [
     "build_deck",
-    "build_layers_dataset",
     "mapbox",
 ]

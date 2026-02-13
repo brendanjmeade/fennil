@@ -4,18 +4,34 @@ from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
     priority=0,
+    label="Locs",
     icon="mdi-circle-medium",
     ui_type="VCheckbox",
-    color_key="loc",
     options=None,
     default=False,
+    styles={
+        "icon_color": "black",
+        "colors": [
+            (0, 0, 0, 220),
+            (0, 0, 0, 220),
+        ],
+        "line_width": (1, 2),
+    },
 )
 
 
-def builder(ctx: LayerContext, value):
-    if not value:
+def builder(name: str, ctx: LayerContext):
+    if ctx.skip(name):
         return
-    ctx.layers.extend(station_layers(ctx.folder_number, ctx.station, ctx.colors["loc"]))
+
+    for idx, dataset in ctx.enabled_datasets(name):
+        ctx.layers.extend(
+            station_layers(
+                dataset.name,
+                dataset.data.station,
+                ctx.specs[name]["styles"]["colors"][idx],
+            )
+        )
 
 
 def can_render(dataset: Dataset) -> bool:

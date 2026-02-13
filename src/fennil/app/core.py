@@ -8,9 +8,8 @@ from trame_dataclass.core import get_instance
 from fennil.app.io import load_folder_data
 
 from .components import FileBrowser, Scale
-from .deck import build_deck, build_layers_dataset, mapbox
-from .deck.styles import TYPE_COLORS
-from .registry import FIELD_REGISTRY
+from .deck import build_deck, mapbox
+from .registry import FIELD_REGISTRY, LayerContext
 from .state import DatasetVisualization, MapSettings
 from .viz import load_all_viz
 
@@ -39,34 +38,26 @@ class FennilApp(TrameApp):
         # build ui
         self._build_ui()
 
-    @change("scale")
+    @change("scale", "field_specs")
     def _update_layers(self, *_, **__):
         """Update DeckGL layers based on loaded data and visibility controls"""
-        base_layers = []
-        all_layers = []
-        vector_layers = []
-
-        # Process all datasets
-        for ds_idx, dataset_config in enumerate(self._datasets):
-            tde, layers, vectors = build_layers_dataset(
-                dataset_config, ds_idx, self.state.scale
-            )
-            base_layers.extend(tde)
-            all_layers.extend(layers)
-            vector_layers.extend(vectors)
+        ctx = LayerContext(
+            specs=self.state.field_specs,
+            datasets=self._datasets,
+            velocity_scale=self.state.scale,
+        )
+        FIELD_REGISTRY.build_layers(ctx)
 
         with self.state:
-            self.ctrl.deck_update(
-                build_deck(base_layers + all_layers + vector_layers, self.map_params)
-            )
+            self.ctrl.deck_update(build_deck(ctx.all_layers, self.map_params))
 
     def load_dataset(self, directory_path):
         self.state.compact_drawer = False  # Always open when new data
         dataset = load_folder_data(directory_path)
         if self._datasets[0].enabled:
-            self._datasets[1].attach_data(directory_path, dataset, TYPE_COLORS[2])
+            self._datasets[1].attach_data(directory_path, dataset)
         else:
-            self._datasets[0].attach_data(directory_path, dataset, TYPE_COLORS[1])
+            self._datasets[0].attach_data(directory_path, dataset)
 
     def reset_dataset(self, index):
         self._datasets[index].clear()
@@ -121,65 +112,63 @@ class FennilApp(TrameApp):
                         prepend_icon="mdi-database-plus",
                     )
 
-                    with self._datasets[0].provide_as("first"):
-                        with self._datasets[1].provide_as("second"):
-                            with v3.VTable(
-                                v_if="!compact_drawer && first.enabled",
-                                density="compact",
-                                striped="even",
-                                fixed_header=True,
-                                height="calc(100vh - 104px - 40px - 40px)",
-                            ):
-                                with html.Thead():
-                                    with html.Tr():
-                                        html.Th("Field", classes="text-center")
-                                        with html.Th():
-                                            with html.Div(
-                                                classes="d-flex align-center"
-                                            ):
-                                                v3.VBtn(
-                                                    icon="mdi-trash-can-outline",
-                                                    density="compact",
-                                                    hide_details=True,
-                                                    size="small",
-                                                    variant="plain",
-                                                    click=(self.reset_dataset, "[0]"),
-                                                )
-                                                html.Div("{{ first.name }}")
-                                        with html.Th(v_if="second.enabled"):
-                                            with html.Div(
-                                                classes="d-flex align-center"
-                                            ):
-                                                v3.VBtn(
-                                                    icon="mdi-trash-can-outline",
-                                                    density="compact",
-                                                    hide_details=True,
-                                                    size="small",
-                                                    variant="plain",
-                                                    click=(self.reset_dataset, "[1]"),
-                                                )
-                                                html.Div("{{ second.name }}")
-                                with html.Tbody():
-                                    with html.Tr(
-                                        v_for="name, i in first.available_fields",
-                                        key="i",
-                                    ):
-                                        with html.Td():
-                                            with html.Div(
-                                                classes="d-flex align-center",
-                                                v_if="field_specs[name]",
-                                            ):
-                                                v3.VIcon(
-                                                    classes="mr-1",
-                                                    icon=["field_specs[name]?.icon"],
-                                                    color=[
-                                                        "`rgba(${(field_specs[name].color || first.colors[field_specs[name].color_key])[0]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[1]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[2]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[3] / 255})`"
-                                                    ],
-                                                )
-                                                v3.VLabel(
-                                                    "{{ name }}",
-                                                    classes="text-capitalize",
-                                                )
+                with self._datasets[0].provide_as("first"):
+                    with self._datasets[1].provide_as("second"):
+                        with v3.VTable(
+                            v_if="!compact_drawer && first.enabled",
+                            density="compact",
+                            striped="even",
+                            fixed_header=True,
+                            height="calc(100vh - 104px - 40px - 40px)",
+                        ):
+                            with html.Thead():
+                                with html.Tr():
+                                    html.Th("Field", classes="text-center")
+                                    with html.Th():
+                                        with html.Div(classes="d-flex align-center"):
+                                            v3.VBtn(
+                                                icon="mdi-trash-can-outline",
+                                                density="compact",
+                                                hide_details=True,
+                                                size="small",
+                                                variant="plain",
+                                                click=(self.reset_dataset, "[0]"),
+                                            )
+                                            html.Div("{{ first.name }}")
+                                    with html.Th(v_if="second.enabled"):
+                                        with html.Div(classes="d-flex align-center"):
+                                            v3.VBtn(
+                                                icon="mdi-trash-can-outline",
+                                                density="compact",
+                                                hide_details=True,
+                                                size="small",
+                                                variant="plain",
+                                                click=(self.reset_dataset, "[1]"),
+                                            )
+                                            html.Div("{{ second.name }}")
+                            with html.Tbody():
+                                with html.Tr(
+                                    v_for="name, i in first.available_fields",
+                                    key="i",
+                                    v_show="field_specs[name].multiple || second.enabled",
+                                ):
+                                    with html.Td():
+                                        with html.Div(
+                                            classes="d-flex align-center",
+                                            v_if="field_specs[name]",
+                                        ):
+                                            v3.VIcon(
+                                                classes="mr-1",
+                                                icon=["field_specs[name]?.icon"],
+                                                color=[
+                                                    "field_specs[name].styles.icon_color"
+                                                ],
+                                            )
+                                            v3.VLabel(
+                                                "{{ field_specs[name].label || name }}",
+                                                classes="text-capitalize",
+                                            )
+                                    with v3.Template(v_if="field_specs[name].multiple"):
                                         with html.Td(
                                             v_for="data, i in [first, second]",
                                             key="i",
@@ -221,23 +210,58 @@ class FennilApp(TrameApp):
                                                         hide_details=True,
                                                         v_bind="props",
                                                     )
+                                    with html.Td(v_else=True, colspan=2):
+                                        with html.Div(
+                                            classes="d-flex align-center justify-center",
+                                            v_if="first.enabled",
+                                        ):
+                                            v3.VCheckbox(
+                                                v_if="field_specs[name]?.type === 'VCheckbox'",
+                                                v_model="first.fields[name]",
+                                                hide_details=True,
+                                                density="compact",
+                                                update_modelValue=(
+                                                    self.update_dataset_config,
+                                                    "[first._id, name, first.fields[name]]",
+                                                ),
+                                            )
+                                            with v3.VBtnToggle(
+                                                v_if="field_specs[name]?.type === 'VBtnToggle'",
+                                                v_model="first.fields[name]",
+                                                hide_details=True,
+                                                density="compact",
+                                                rounded="md",
+                                                border=True,
+                                                divided=True,
+                                                style="height: 24px;",
+                                                update_modelValue=(
+                                                    self.update_dataset_config,
+                                                    "[first._id, name, first.fields[name]]",
+                                                ),
+                                            ):
+                                                v3.VBtn(
+                                                    v_for="props, i in field_specs[name].options",
+                                                    key="i",
+                                                    size=24,
+                                                    density="compact",
+                                                    hide_details=True,
+                                                    v_bind="props",
+                                                )
 
-                            with html.Div(
-                                v_if="compact_drawer && first.enabled",
-                                classes="pa-0 d-flex flex-column align-center",
-                            ):
-                                v3.VChip(
-                                    "{{name}} {{ typeof first.fields[name] === 'string' ? first.fields[name].toUpperCase() : null }}",
-                                    label=True,
-                                    classes="text-capitalize my-1",
-                                    v_for="name, i in first.available_fields",
-                                    key="i",
-                                    v_show="first.fields[name]",
-                                    size="x-small",
-                                    color=[
-                                        "`rgba(${(field_specs[name].color || first.colors[field_specs[name].color_key])[0]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[1]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[2]}, ${(field_specs[name].color || first.colors[field_specs[name].color_key])[3] / 255})`"
-                                    ],
-                                )
+                        with html.Div(
+                            v_if="compact_drawer && first.enabled",
+                            classes="pa-0 d-flex flex-column align-center",
+                        ):
+                            v3.VChip(
+                                "{{ field_specs[name].label || name }} {{ typeof first.fields[name] === 'string' ? first.fields[name].toUpperCase() : null }}",
+                                label=True,
+                                classes="text-capitalize my-1",
+                                v_for="name, i in first.available_fields",
+                                key="i",
+                                v_show="first.fields[name]",
+                                size="x-small",
+                                color=["field_specs[name].styles.icon_color"],
+                            )
 
                 with v3.Template(v_slot_append=True):
                     Scale(v_if="!compact_drawer")
