@@ -61,16 +61,16 @@ class FieldRegistry:
         if field_name not in self._order:
             self._order.append(field_name)
 
-    def defaults(self):
+    def field_defaults(self):
         return {name: self._specs[name].default for name in self._order}
 
-    def names(self):
+    def available_fields(self):
         return list(self._order)
 
     def export_specs(self):
         return {name: spec.to_dict() for name, spec in self._specs.items()}
 
-    def apply(self, name, ctx: LayerContext):
+    def build_layers(self, name, ctx: LayerContext):
         builder = self._builders.get(name)
         if not builder:
             return
