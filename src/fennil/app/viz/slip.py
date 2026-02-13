@@ -18,6 +18,11 @@ SPEC = FieldSpec(
     default=None,
     styles={
         "icon_color": "#1976D2",
+        "colors": [
+            (0, 0, 255, 255),
+            (0, 128, 0, 255),
+        ],
+        "line_width": (1, 3),
     },
 )
 
@@ -32,7 +37,11 @@ def builder(name: str, ctx: LayerContext):
 
         # FIXME should we always add fault_layers ?
         fault_layers, fault_lines_df = fault_line_layers(
-            folder_number, dataset.data.segment, seg_tooltip_enabled
+            folder_number,
+            dataset.data.segment,
+            seg_tooltip_enabled,
+            ctx.specs[name]["styles"]["colors"][idx],
+            ctx.specs[name]["styles"]["line_width"][idx],
         )
         ctx.layers.extend(fault_layers)
         ctx.layers.extend(

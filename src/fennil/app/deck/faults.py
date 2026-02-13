@@ -2,7 +2,6 @@ import pandas as pd
 
 from .primitives import line_layers, polygon_layers
 from .styles import (
-    FAULT_LINE_STYLE,
     FAULT_PROJ_LINE_WIDTH,
     SEGMENT_LINE_WIDTH,
     map_slip_colors,
@@ -16,7 +15,7 @@ REQUIRED_SEG_COLS = {
 }
 
 
-def fault_line_layers(folder_number, segment, seg_tooltip_enabled):
+def fault_line_layers(folder_number, segment, seg_tooltip_enabled, color, line_width):
     fault_lines_df = pd.DataFrame(
         {
             "start_lon": segment.lon1.to_numpy(),
@@ -54,8 +53,8 @@ def fault_line_layers(folder_number, segment, seg_tooltip_enabled):
     layers = line_layers(
         "fault",
         fault_lines_df,
-        FAULT_LINE_STYLE[folder_number]["color"],
-        FAULT_LINE_STYLE[folder_number]["width"],
+        color,
+        line_width,
         folder_number,
         width_min_pixels=1,
         pickable=seg_tooltip_enabled,

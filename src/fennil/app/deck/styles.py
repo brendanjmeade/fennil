@@ -25,22 +25,6 @@ RDBU_11 = [
 SLIP_RATE_MIN = -100.0
 SLIP_RATE_MAX = 100.0
 
-FAULT_PROJ_STYLE = {
-    1: {
-        "fill": [173, 216, 230, 77],  # lightblue @ 0.3 alpha
-        "line": [0, 0, 255, 255],  # blue
-    },
-    2: {
-        "fill": [144, 238, 144, 77],  # lightgreen @ 0.3 alpha
-        "line": [0, 128, 0, 255],  # green
-    },
-}
-
-FAULT_LINE_STYLE = {
-    1: {"color": [0, 0, 255, 255], "width": 1},
-    2: {"color": [0, 128, 0, 255], "width": 3},
-}
-
 
 def map_slip_colors(values):
     """Map slip values to discrete RdBu[11] colors."""
