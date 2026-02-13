@@ -60,7 +60,7 @@ def build_layers_dataset(config, ds_index, velocity_scale=1):
         fault_lines_df=fault_lines_df,
         seg_tooltip_enabled=seg_tooltip_enabled,
     )
-    for name in config.available_fields:
-        FIELD_REGISTRY.apply(name, ctx)
+    for field_name in config.available_fields:
+        FIELD_REGISTRY.build_layers(field_name, ctx)
 
     return tde_layers, layers, vector_layers
