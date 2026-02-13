@@ -2,6 +2,7 @@ from fennil.app.deck.faults import (
     REQUIRED_SEG_COLS,
     segment_color_layers,
 )
+from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
@@ -32,3 +33,7 @@ def builder(ctx: LayerContext, value):
             ctx.fault_lines_df,
         )
     )
+
+
+def can_render(dataset: Dataset) -> bool:
+    return dataset is not None

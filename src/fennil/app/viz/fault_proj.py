@@ -1,4 +1,5 @@
 from fennil.app.deck.faults import fault_projection_layers
+from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
@@ -19,3 +20,10 @@ def builder(ctx: LayerContext, value):
     if not data.fault_proj_available:
         return
     ctx.layers.extend(fault_projection_layers(ctx.folder_number, data.fault_proj_df))
+
+
+def can_render(dataset: Dataset) -> bool:
+    if dataset is None:
+        return False
+
+    return dataset.fault_proj_available

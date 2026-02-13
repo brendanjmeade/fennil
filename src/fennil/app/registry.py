@@ -2,6 +2,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from fennil.app.io import Dataset
+
 
 @dataclass(frozen=True)
 class FieldSpec:
@@ -45,16 +47,22 @@ class FieldRegistry:
     def __init__(self):
         self._specs: dict[str, FieldSpec] = {}
         self._builders: dict[str, Callable[[LayerContext, Any], None]] = {}
+        self._can_render: dict[str, Callable[[Dataset], bool]] = {}
 
-    def register(self, field_name: str, spec: FieldSpec, builder):
+    def register(self, field_name: str, spec: FieldSpec, builder, can_render):
         self._specs[field_name] = spec
         self._builders[field_name] = builder
+        self._can_render[field_name] = can_render
 
     def field_defaults(self):
         return {name: spec.default for name, spec in self._specs.items()}
 
-    def available_fields(self):
-        name_priority = [(name, spec.priority) for name, spec in self._specs.items()]
+    def available_fields(self, dataset):
+        name_priority = [
+            (name, spec.priority)
+            for name, spec in self._specs.items()
+            if self._can_render[name](dataset)
+        ]
         return [name for name, _ in sorted(name_priority, key=lambda tup: tup[1])]
 
     def export_specs(self):

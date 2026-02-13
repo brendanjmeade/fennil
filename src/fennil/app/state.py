@@ -35,7 +35,7 @@ class DatasetVisualization(StateDataModel):
         self.enabled = bool(data)
         if data:
             self.name = Path(directory_path).stem.lstrip("0")
-            self.available_fields = FIELD_REGISTRY.available_fields()
+            self.available_fields = FIELD_REGISTRY.available_fields(data)
             self.fields = FIELD_REGISTRY.field_defaults()
             self.colors = colors
 

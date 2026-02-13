@@ -20,6 +20,7 @@ def load_all_viz():
             name,
             module.SPEC,
             module.builder,
+            module.can_render,
         )
 
 

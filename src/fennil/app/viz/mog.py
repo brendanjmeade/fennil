@@ -1,4 +1,5 @@
 from fennil.app.deck.vectors import velocity_layers
+from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
@@ -29,3 +30,7 @@ def builder(ctx: LayerContext, value):
             ctx.velocity_scale,
         )
     )
+
+
+def can_render(dataset: Dataset) -> bool:
+    return dataset is not None

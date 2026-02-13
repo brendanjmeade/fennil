@@ -1,4 +1,5 @@
 from fennil.app.deck.tde import tde_mesh_layers, tde_perimeter_layers
+from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
@@ -29,3 +30,7 @@ def builder(ctx: LayerContext, value):
         )
         ctx.tde_layers.extend(tde_mesh_layers(ctx.folder_number, tde_df, slip_values))
     ctx.tde_layers.extend(tde_perimeter_layers(ctx.folder_number, data.tde_perim_df))
+
+
+def can_render(dataset: Dataset) -> bool:
+    return dataset is not None
