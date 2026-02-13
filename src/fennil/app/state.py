@@ -27,7 +27,7 @@ class DatasetVisualization(StateDataModel):
     colors: dict[str, list[int]] | None
 
     def attach_data(self, directory_path, data, colors):
-        from .fields import FIELD_REGISTRY
+        from .registry import FIELD_REGISTRY
 
         self._data = data
 

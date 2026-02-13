@@ -10,8 +10,9 @@ from fennil.app.io import load_folder_data
 from .components import FileBrowser, Scale
 from .deck import build_deck, build_layers_dataset, mapbox
 from .deck.styles import TYPE_COLORS
-from .fields import FIELD_REGISTRY
+from .registry import FIELD_REGISTRY
 from .state import DatasetVisualization, MapSettings
+from .viz import load_all_viz
 
 
 class FennilApp(TrameApp):
@@ -21,6 +22,9 @@ class FennilApp(TrameApp):
         # --hot-reload for dev UI faster
         if self.server.hot_reload:
             self.server.controller.on_server_reload.add(self._build_ui)
+
+        # Load all available viz
+        load_all_viz()
 
         # Only 2 datasets max
         self._datasets = [

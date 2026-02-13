@@ -1,6 +1,7 @@
 import pydeck as pdk
 
-from ..fields import FIELD_REGISTRY, LayerContext
+from fennil.app.registry import FIELD_REGISTRY, LayerContext
+
 from . import mapbox
 from .faults import fault_line_layers
 
