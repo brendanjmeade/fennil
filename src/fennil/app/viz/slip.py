@@ -22,7 +22,7 @@ SPEC = FieldSpec(
             (0, 0, 255, 255),
             (0, 128, 0, 255),
         ],
-        "line_width": (1, 3),
+        "line_width": (1, 1),
     },
 )
 

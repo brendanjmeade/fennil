@@ -60,6 +60,10 @@ class FennilApp(TrameApp):
             self._datasets[0].attach_data(directory_path, dataset)
 
     def reset_dataset(self, index):
+        if index == 0 and self._datasets[1].enabled:
+            self._datasets[0].adopt(self._datasets[1])
+            self._datasets[1].clear()
+            return
         self._datasets[index].clear()
 
     def update_dataset_config(self, id, name, value):

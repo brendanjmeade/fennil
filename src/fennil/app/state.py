@@ -44,3 +44,10 @@ class DatasetVisualization(StateDataModel):
         self.enabled = False
         self.fields = {}
         self.available_fields = []
+
+    def adopt(self, other):
+        self._data = other.data
+        self.name = other.name
+        self.enabled = other.enabled
+        self.fields = dict(other.fields)
+        self.available_fields = list(other.available_fields)
