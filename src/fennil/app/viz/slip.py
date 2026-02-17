@@ -28,14 +28,13 @@ SPEC = FieldSpec(
 
 
 def builder(name: str, ctx: LayerContext):
-    if ctx.skip(name):
-        return
+    for idx, dataset in enumerate(ctx.datasets):
+        if not dataset.enabled or name not in dataset.available_fields:
+            continue
 
-    for idx, dataset in ctx.enabled_datasets(name):
         folder_number = idx + 1
         seg_tooltip_enabled = not idx  # show tooltip only for first dataset
 
-        # FIXME should we always add fault_layers ?
         fault_layers, fault_lines_df = fault_line_layers(
             folder_number,
             dataset.data.segment,
@@ -44,6 +43,10 @@ def builder(name: str, ctx: LayerContext):
             ctx.specs[name]["styles"]["line_width"][idx],
         )
         ctx.layers.extend(fault_layers)
+
+        if not dataset.fields.get(name):
+            continue
+
         ctx.layers.extend(
             segment_color_layers(
                 folder_number,
