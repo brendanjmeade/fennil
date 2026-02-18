@@ -118,10 +118,10 @@ class FennilApp(TrameApp):
                         prepend_icon="mdi-database-plus",
                     )
 
-                with self._datasets[0].provide_as("first"):
-                    with self._datasets[1].provide_as("second"):
+                with self._datasets[0].provide_as("right"):
+                    with self._datasets[1].provide_as("left"):
                         with v3.VTable(
-                            v_if="!compact_drawer && first.enabled",
+                            v_if="!compact_drawer && (left.enabled || right.enabled)",
                             density="compact",
                             striped="even",
                             fixed_header=True,
@@ -138,10 +138,15 @@ class FennilApp(TrameApp):
                                                 hide_details=True,
                                                 size="small",
                                                 variant="plain",
-                                                click=(self.reset_dataset, "[0]"),
+                                                click=(
+                                                    self.reset_dataset,
+                                                    "[left.enabled ? 1 : 0]",
+                                                ),
                                             )
-                                            html.Div("{{ first.name }}")
-                                    with html.Th(v_if="second.enabled"):
+                                            html.Div(
+                                                "{{ left.enabled ? left.name : right.name }}"
+                                            )
+                                    with html.Th(v_if="left.enabled"):
                                         with html.Div(classes="d-flex align-center"):
                                             v3.VBtn(
                                                 icon="mdi-trash-can-outline",
@@ -149,14 +154,14 @@ class FennilApp(TrameApp):
                                                 hide_details=True,
                                                 size="small",
                                                 variant="plain",
-                                                click=(self.reset_dataset, "[1]"),
+                                                click=(self.reset_dataset, "[0]"),
                                             )
-                                            html.Div("{{ second.name }}")
+                                            html.Div("{{ right.name }}")
                             with html.Tbody():
                                 with html.Tr(
-                                    v_for="name, i in first.available_fields",
+                                    v_for="name, i in (left.enabled ? left.available_fields : right.available_fields)",
                                     key="i",
-                                    v_show="field_specs[name].multiple || second.enabled",
+                                    v_show="field_specs[name].multiple || left.enabled",
                                 ):
                                     with html.Td():
                                         with html.Div(
@@ -176,27 +181,27 @@ class FennilApp(TrameApp):
                                             )
                                     with v3.Template(v_if="field_specs[name].multiple"):
                                         with html.Td(
-                                            v_for="data, i in [first, second]",
+                                            v_for="col, i in (left.enabled ? [{data: left, idx: 1}, {data: right, idx: 0}] : [{data: right, idx: 0}])",
                                             key="i",
-                                            v_show="data.enabled",
+                                            v_show="col.data.enabled",
                                         ):
                                             with html.Div(
                                                 classes="d-flex align-center justify-center",
-                                                v_if="data.enabled",
+                                                v_if="col.data.enabled",
                                             ):
                                                 v3.VCheckbox(
                                                     v_if="field_specs[name]?.type === 'VCheckbox'",
-                                                    v_model="data.fields[name]",
+                                                    v_model="col.data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",
                                                     update_modelValue=(
                                                         self.update_dataset_config,
-                                                        "[data._id, name, data.fields[name]]",
+                                                        "[col.data._id, name, col.data.fields[name]]",
                                                     ),
                                                 )
                                                 with v3.VBtnToggle(
                                                     v_if="field_specs[name]?.type === 'VBtnToggle'",
-                                                    v_model="data.fields[name]",
+                                                    v_model="col.data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",
                                                     rounded="md",
@@ -205,7 +210,7 @@ class FennilApp(TrameApp):
                                                     style="height: 24px;",
                                                     update_modelValue=(
                                                         self.update_dataset_config,
-                                                        "[data._id, name, data.fields[name]]",
+                                                        "[col.data._id, name, col.data.fields[name]]",
                                                     ),
                                                 ):
                                                     v3.VBtn(
@@ -219,21 +224,22 @@ class FennilApp(TrameApp):
                                     with html.Td(v_else=True, colspan=2):
                                         with html.Div(
                                             classes="d-flex align-center justify-center",
-                                            v_if="first.enabled",
+                                            v_for="data, i in [left.enabled ? left : right]",
+                                            key="i",
                                         ):
                                             v3.VCheckbox(
                                                 v_if="field_specs[name]?.type === 'VCheckbox'",
-                                                v_model="first.fields[name]",
+                                                v_model="data.fields[name]",
                                                 hide_details=True,
                                                 density="compact",
                                                 update_modelValue=(
                                                     self.update_dataset_config,
-                                                    "[first._id, name, first.fields[name]]",
+                                                    "[data._id, name, data.fields[name]]",
                                                 ),
                                             )
                                             with v3.VBtnToggle(
                                                 v_if="field_specs[name]?.type === 'VBtnToggle'",
-                                                v_model="first.fields[name]",
+                                                v_model="data.fields[name]",
                                                 hide_details=True,
                                                 density="compact",
                                                 rounded="md",
@@ -242,7 +248,7 @@ class FennilApp(TrameApp):
                                                 style="height: 24px;",
                                                 update_modelValue=(
                                                     self.update_dataset_config,
-                                                    "[first._id, name, first.fields[name]]",
+                                                    "[data._id, name, data.fields[name]]",
                                                 ),
                                             ):
                                                 v3.VBtn(
@@ -255,19 +261,24 @@ class FennilApp(TrameApp):
                                                 )
 
                         with html.Div(
-                            v_if="compact_drawer && first.enabled",
+                            v_if="compact_drawer && (left.enabled || right.enabled)",
                             classes="pa-0 d-flex flex-column align-center",
                         ):
-                            v3.VChip(
-                                "{{ field_specs[name].label || name }} {{ typeof first.fields[name] === 'string' ? first.fields[name].toUpperCase() : null }}",
-                                label=True,
-                                classes="text-capitalize my-1",
-                                v_for="name, i in first.available_fields",
+                            with html.Div(
+                                v_for="data, i in [left.enabled ? left : right]",
                                 key="i",
-                                v_show="first.fields[name]",
-                                size="x-small",
-                                color=["field_specs[name].styles.icon_color"],
-                            )
+                                classes="pa-0 d-flex flex-column align-center",
+                            ):
+                                v3.VChip(
+                                    "{{ field_specs[name].label || name }} {{ typeof data.fields[name] === 'string' ? data.fields[name].toUpperCase() : null }}",
+                                    label=True,
+                                    classes="text-capitalize my-1",
+                                    v_for="name, i in data.available_fields",
+                                    key="i",
+                                    v_show="data.fields[name]",
+                                    size="x-small",
+                                    color=["field_specs[name].styles.icon_color"],
+                                )
 
                 with v3.Template(v_slot_append=True):
                     Scale(v_if="!compact_drawer")
