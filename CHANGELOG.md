@@ -2,6 +2,68 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-02-18)
+
+### Bug Fixes
+
+- Always show fault lines
+  ([`58a87b9`](https://github.com/brendanjmeade/fennil/commit/58a87b9d2a21ffe2c1307336e903ab490e27eea4))
+
+- Display SS TDE mesh and Slip lines
+  ([`e960a0f`](https://github.com/brendanjmeade/fennil/commit/e960a0f4fa3921b395f4e17eff0fcea5356eba43))
+
+- Fix bug removing first dataset
+  ([`441e536`](https://github.com/brendanjmeade/fennil/commit/441e5360c09a33196dafff0eb7d22908fccf8eee))
+
+- Switch str/mog from vectors to points
+  ([`de10c73`](https://github.com/brendanjmeade/fennil/commit/de10c73f75e78632e5ad4ee1ff393348ef8c66cb))
+
+- **dependencies**: Update python dependencies
+  ([`d0b2fde`](https://github.com/brendanjmeade/fennil/commit/d0b2fde5eaf461e374fa1fa633c6faf836347f9d))
+
+- **style**: Use spec styles
+  ([`b0aa5f9`](https://github.com/brendanjmeade/fennil/commit/b0aa5f91ace563584dc7f4e8cca9b0d79906311c))
+
+### Continuous Integration
+
+- Exclude CHANGELOG.md from pre-commit
+  ([`2874874`](https://github.com/brendanjmeade/fennil/commit/2874874bda74219154af46210c8fd692623561ed))
+
+- Make release manual process
+  ([`0b0d545`](https://github.com/brendanjmeade/fennil/commit/0b0d545923e03257e3c085b141526ac4af17e855))
+
+### Features
+
+- **ui**: New ui
+  ([`7538193`](https://github.com/brendanjmeade/fennil/commit/7538193c452ae0d38cea8cc624041ee62ecc77f3))
+
+- **viz**: Allow viz filtering based on dataset
+  ([`f233404`](https://github.com/brendanjmeade/fennil/commit/f23340418a4e70cb83b7503cd9f10d7c0b720ccb))
+
+- **viz**: Make viz dynamic
+  ([`2234c25`](https://github.com/brendanjmeade/fennil/commit/2234c25529a1b312987e0a566ba4faecb5f1c3d6))
+
+### Refactoring
+
+- Bring util to root package
+  ([`fa580b8`](https://github.com/brendanjmeade/fennil/commit/fa580b8da762e860faf411fd8a9bd4e96720511d))
+
+- Create fields.py and FIELD_REGISTRY
+  ([`496ce61`](https://github.com/brendanjmeade/fennil/commit/496ce6110b4da1b362789fef19cfed725b33c842))
+
+- Move core2.py and builder2.py
+  ([`b1892da`](https://github.com/brendanjmeade/fennil/commit/b1892da0d660d648d8325c51de72fdd49344f6fb))
+
+- Remove old code
+  ([`d6c728b`](https://github.com/brendanjmeade/fennil/commit/d6c728b9c182f0ea189ffca3bd6d00446375c049))
+
+- Rename FieldRegistry methods
+  ([`9a54d89`](https://github.com/brendanjmeade/fennil/commit/9a54d894b10bce4d39d7e96bccb77cba74ce66f9))
+
+- **viz**: Normalize viz builders
+  ([`c6fa12a`](https://github.com/brendanjmeade/fennil/commit/c6fa12ad33962081b89a17f90cc7b061d02354d3))
+
+
 ## v1.2.1 (2026-02-10)
 
 ### Bug Fixes
