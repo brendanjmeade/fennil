@@ -128,3 +128,44 @@ def scatter_layers(
         )
     )
     return layers
+
+
+def icon_layers(
+    layer_id_prefix,
+    data_df,
+    get_position,
+    get_icon,
+    get_color,
+    get_size,
+    folder_number,
+    position_lon_key="lon",
+    get_angle=None,
+    size_min_pixels=1,
+    size_max_pixels=64,
+    billboard=True,
+    pickable=False,
+):
+    layer_kwargs = {
+        "data": data_df,
+        "get_position": get_position,
+        "get_icon": get_icon,
+        "get_color": get_color,
+        "get_size": get_size,
+        "size_min_pixels": size_min_pixels,
+        "size_max_pixels": size_max_pixels,
+        "billboard": billboard,
+        "pickable": pickable,
+        "id": f"{layer_id_prefix}_{folder_number}",
+    }
+    if get_angle is not None:
+        layer_kwargs["get_angle"] = get_angle
+
+    layers = [pdk.Layer("IconLayer", **layer_kwargs)]
+
+    shift_df = shift_longitudes_df(data_df, [position_lon_key])
+    shifted_kwargs = layer_kwargs | {
+        "data": shift_df,
+        "id": f"{layer_id_prefix}_shift_{folder_number}",
+    }
+    layers.append(pdk.Layer("IconLayer", **shifted_kwargs))
+    return layers
