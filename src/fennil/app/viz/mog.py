@@ -1,11 +1,11 @@
-from fennil.app.deck.stations import station_layers
+from fennil.app.deck.vectors import velocity_layers
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
     priority=16,
     label="Mog",
-    icon="mdi-circle-medium",
+    icon="mdi-vector-line",
     ui_type="VCheckbox",
     options=None,
     default=False,
@@ -25,11 +25,18 @@ def builder(name: str, ctx: LayerContext):
         return
 
     for idx, dataset in ctx.enabled_datasets(name):
-        ctx.layers.extend(
-            station_layers(
-                dataset.name,
+        ctx.vector_layers.extend(
+            velocity_layers(
+                "mog_vel",
                 dataset.data.station,
+                dataset.data.x_station,
+                dataset.data.y_station,
+                dataset.data.station.model_east_vel_mogi.values,
+                dataset.data.station.model_north_vel_mogi.values,
                 ctx.specs[name]["styles"]["colors"][idx],
+                ctx.specs[name]["styles"]["line_width"][idx],
+                dataset.name,
+                ctx.velocity_scale,
             )
         )
 
