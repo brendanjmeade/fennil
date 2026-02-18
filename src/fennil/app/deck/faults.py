@@ -15,7 +15,7 @@ REQUIRED_SEG_COLS = {
 }
 
 
-def fault_line_layers(folder_number, segment, seg_tooltip_enabled, color, line_width):
+def fault_line_dataframe(segment, seg_tooltip_enabled):
     fault_lines_df = pd.DataFrame(
         {
             "start_lon": segment.lon1.to_numpy(),
@@ -49,6 +49,12 @@ def fault_line_layers(folder_number, segment, seg_tooltip_enabled, color, line_w
                 strict=False,
             )
         ]
+
+    return fault_lines_df
+
+
+def fault_line_layers(folder_number, segment, seg_tooltip_enabled, color, line_width):
+    fault_lines_df = fault_line_dataframe(segment, seg_tooltip_enabled)
 
     layers = line_layers(
         "fault",

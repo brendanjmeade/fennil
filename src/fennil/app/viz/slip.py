@@ -1,6 +1,6 @@
 from fennil.app.deck.faults import (
     REQUIRED_SEG_COLS,
-    fault_line_layers,
+    fault_line_dataframe,
     segment_color_layers,
 )
 from fennil.app.io import Dataset
@@ -28,25 +28,10 @@ SPEC = FieldSpec(
 
 
 def builder(name: str, ctx: LayerContext):
-    for idx, dataset in enumerate(ctx.datasets):
-        if not dataset.enabled or name not in dataset.available_fields:
-            continue
-
+    for idx, dataset in ctx.enabled_datasets(name):
         folder_number = idx + 1
         seg_tooltip_enabled = not idx  # show tooltip only for first dataset
-
-        fault_layers, fault_lines_df = fault_line_layers(
-            folder_number,
-            dataset.data.segment,
-            seg_tooltip_enabled,
-            ctx.specs[name]["styles"]["colors"][idx],
-            ctx.specs[name]["styles"]["line_width"][idx],
-        )
-        ctx.layers.extend(fault_layers)
-
-        if not dataset.fields.get(name):
-            continue
-
+        fault_lines_df = fault_line_dataframe(dataset.data.segment, seg_tooltip_enabled)
         ctx.layers.extend(
             segment_color_layers(
                 folder_number,

@@ -9,6 +9,7 @@ from fennil.app.io import load_folder_data
 
 from .components import FileBrowser, Scale
 from .deck import build_deck, mapbox
+from .deck.fault_lines import build_fault_lines
 from .registry import FIELD_REGISTRY, LayerContext
 from .state import DatasetVisualization, MapSettings
 from .viz import load_all_viz
@@ -46,6 +47,7 @@ class FennilApp(TrameApp):
             datasets=self._datasets,
             velocity_scale=self.state.scale,
         )
+        build_fault_lines(ctx)
         FIELD_REGISTRY.build_layers(ctx)
 
         with self.state:
