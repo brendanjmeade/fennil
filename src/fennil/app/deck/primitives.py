@@ -10,34 +10,42 @@ def line_layers(
     line_width,
     folder_number,
     width_min_pixels=1,
+    width_max_pixels=None,
+    width_scale=1,
+    width_units=None,
     pickable=False,
 ):
+    layer_kwargs = {
+        "data": data_df,
+        "get_source_position": ["start_lon", "start_lat"],
+        "get_target_position": ["end_lon", "end_lat"],
+        "get_color": get_color,
+        "get_width": line_width,
+        "width_min_pixels": width_min_pixels,
+        "width_scale": width_scale,
+        "pickable": pickable,
+    }
+    if width_max_pixels is not None:
+        layer_kwargs["width_max_pixels"] = width_max_pixels
+    if width_units is not None:
+        # pydeck expects quoted string literals for enum-like values.
+        layer_kwargs["width_units"] = f"'{width_units}'"
+
     layers = [
         pdk.Layer(
             "LineLayer",
-            data=data_df,
-            get_source_position=["start_lon", "start_lat"],
-            get_target_position=["end_lon", "end_lat"],
-            get_color=get_color,
-            get_width=line_width,
-            width_min_pixels=width_min_pixels,
-            pickable=pickable,
             id=f"{layer_id_prefix}_{folder_number}",
+            **layer_kwargs,
         )
     ]
 
     shift_df = shift_longitudes_df(data_df, ["start_lon", "end_lon"])
+    shifted_kwargs = layer_kwargs | {"data": shift_df}
     layers.append(
         pdk.Layer(
             "LineLayer",
-            data=shift_df,
-            get_source_position=["start_lon", "start_lat"],
-            get_target_position=["end_lon", "end_lat"],
-            get_color=get_color,
-            get_width=line_width,
-            width_min_pixels=width_min_pixels,
-            pickable=pickable,
             id=f"{layer_id_prefix}_shift_{folder_number}",
+            **shifted_kwargs,
         )
     )
     return layers

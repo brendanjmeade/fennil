@@ -1,10 +1,13 @@
+import numpy as np
 import pandas as pd
 
 from .primitives import line_layers, polygon_layers
 from .styles import (
     FAULT_PROJ_LINE_WIDTH,
-    SEGMENT_LINE_WIDTH,
-    map_slip_colors,
+    SLIP_NEGATIVE_COLOR,
+    SLIP_POSITIVE_COLOR,
+    SLIP_WIDTH_MIN_PIXELS,
+    SLIP_WIDTH_SCALE,
 )
 from .tooltips import format_segment_tooltip
 
@@ -68,13 +71,16 @@ def fault_line_layers(folder_number, segment, seg_tooltip_enabled, color, line_w
     return layers, fault_lines_df
 
 
-def segment_color_layers(
+def segment_slip_layers(
     folder_number,
     segment,
     seg_slip_type,
     seg_tooltip_enabled,
     fault_lines_df,
+    velocity_scale=1.0,
 ):
+    velocity_scale = 1.0 if velocity_scale is None else float(velocity_scale)
+
     if seg_slip_type == "ss":
         slip_values = segment.model_strike_slip_rate.to_numpy()
     else:
@@ -83,6 +89,9 @@ def segment_color_layers(
             - segment.model_tensile_slip_rate.to_numpy()
         )
 
+    slip_values = np.asarray(slip_values)
+    slip_values = np.nan_to_num(slip_values, nan=0.0, posinf=0.0, neginf=0.0)
+
     seg_lines_df = pd.DataFrame(
         {
             "start_lon": segment.lon1.to_numpy(),
@@ -90,11 +99,14 @@ def segment_color_layers(
             "end_lon": segment.lon2.to_numpy(),
             "end_lat": segment.lat2.to_numpy(),
             "slip_rate": slip_values,
+            "line_width": np.abs(slip_values),
         }
     )
 
-    colors_array = map_slip_colors(slip_values)
-    seg_lines_df["color"] = colors_array
+    seg_lines_df["color"] = [
+        SLIP_NEGATIVE_COLOR if value < 0 else SLIP_POSITIVE_COLOR
+        for value in slip_values
+    ]
     if seg_tooltip_enabled and "tooltip" in fault_lines_df.columns:
         seg_lines_df["tooltip"] = fault_lines_df["tooltip"].to_numpy()
 
@@ -102,9 +114,11 @@ def segment_color_layers(
         "segments",
         seg_lines_df,
         "color",
-        SEGMENT_LINE_WIDTH,
+        "line_width",
         folder_number,
-        width_min_pixels=2,
+        width_min_pixels=SLIP_WIDTH_MIN_PIXELS,
+        width_scale=SLIP_WIDTH_SCALE * velocity_scale,
+        width_units="pixels",
         pickable=seg_tooltip_enabled,
     )
 

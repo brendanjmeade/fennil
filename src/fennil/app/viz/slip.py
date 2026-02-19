@@ -1,7 +1,7 @@
 from fennil.app.deck.faults import (
     REQUIRED_SEG_COLS,
     fault_line_dataframe,
-    segment_color_layers,
+    segment_slip_layers,
 )
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
@@ -33,12 +33,13 @@ def builder(name: str, ctx: LayerContext):
         seg_tooltip_enabled = not idx  # show tooltip only for first dataset
         fault_lines_df = fault_line_dataframe(dataset.data.segment, seg_tooltip_enabled)
         ctx.layers.extend(
-            segment_color_layers(
+            segment_slip_layers(
                 folder_number,
                 dataset.data.segment,
                 dataset.fields[name],
                 seg_tooltip_enabled,
                 fault_lines_df,
+                ctx.velocity_scale,
             )
         )
 
