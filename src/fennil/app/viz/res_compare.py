@@ -1,9 +1,10 @@
+from fennil.app.deck.res_compare import residual_compare_layers
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
     priority=50,
-    label="Res",
+    label="Res compare",
     icon="mdi-vector-difference",
     ui_type="VCheckbox",
     options=None,
@@ -20,7 +21,24 @@ SPEC = FieldSpec(
 )
 
 
-def builder(name: str, ctx: LayerContext): ...
+def builder(name: str, ctx: LayerContext):
+    if ctx.skip(name):
+        return
+
+    right = ctx.datasets[0]
+    left = ctx.datasets[1]
+    if not (right.enabled and left.enabled):
+        return
+    if right.data is None or left.data is None:
+        return
+
+    ctx.layers.extend(
+        residual_compare_layers(
+            right.data,
+            left.data,
+            ctx.velocity_scale,
+        )
+    )
 
 
 def can_render(dataset: Dataset) -> bool:
