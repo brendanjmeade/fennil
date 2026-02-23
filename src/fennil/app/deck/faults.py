@@ -5,7 +5,10 @@ from .primitives import line_layers, polygon_layers
 from .styles import (
     FAULT_PROJ_LINE_WIDTH,
     SLIP_NEGATIVE_COLOR,
+    SLIP_NEGATIVE_EXTREME_COLOR,
     SLIP_POSITIVE_COLOR,
+    SLIP_POSITIVE_EXTREME_COLOR,
+    SLIP_WIDTH_CAP_MM_PER_YR,
     SLIP_WIDTH_MIN_PIXELS,
     SLIP_WIDTH_SCALE,
 )
@@ -99,14 +102,20 @@ def segment_slip_layers(
             "end_lon": segment.lon2.to_numpy(),
             "end_lat": segment.lat2.to_numpy(),
             "slip_rate": slip_values,
-            "line_width": np.abs(slip_values),
+            "line_width": np.clip(np.abs(slip_values), 0.0, SLIP_WIDTH_CAP_MM_PER_YR),
         }
     )
 
-    seg_lines_df["color"] = [
-        SLIP_NEGATIVE_COLOR if value < 0 else SLIP_POSITIVE_COLOR
-        for value in slip_values
-    ]
+    def _slip_color(value):
+        if value < -SLIP_WIDTH_CAP_MM_PER_YR:
+            return SLIP_NEGATIVE_EXTREME_COLOR
+        if value > SLIP_WIDTH_CAP_MM_PER_YR:
+            return SLIP_POSITIVE_EXTREME_COLOR
+        if value < 0:
+            return SLIP_NEGATIVE_COLOR
+        return SLIP_POSITIVE_COLOR
+
+    seg_lines_df["color"] = [_slip_color(value) for value in slip_values]
     if seg_tooltip_enabled and "tooltip" in fault_lines_df.columns:
         seg_lines_df["tooltip"] = fault_lines_df["tooltip"].to_numpy()
 
