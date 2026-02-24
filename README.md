@@ -24,6 +24,9 @@ fennil
 
 ## Mapbox token
 
+Get a Mapbox access token at:
+https://docs.mapbox.com/help/getting-started/access-tokens/.
+
 Set a Mapbox access token so base maps render with Mapbox styles. Either export
 it in your shell or place it in a local `.env` file (for local development):
 
