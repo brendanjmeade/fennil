@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-02-24)
+
+### Bug Fixes
+
+- Resolve mapbox token issue
+  ([`3c07a19`](https://github.com/brendanjmeade/fennil/commit/3c07a198871a4d5e973af7432ae34bc28ed363c3))
+
+- Revert mog/str back to being vectors
+  ([`a903100`](https://github.com/brendanjmeade/fennil/commit/a903100736b79f751263c67bdb360c628feac027))
+
+### Chores
+
+- Rewrite readme and add image
+  ([`b505f07`](https://github.com/brendanjmeade/fennil/commit/b505f073294fc503f3a83e6f4d17525f8964c4a8))
+
+### Features
+
+- Add res compare
+  ([`7bd2bf5`](https://github.com/brendanjmeade/fennil/commit/7bd2bf5deada5cacd065bc7f4612a21eed5830a0))
+
+- Display slip line magnitude with segment width
+  ([`9865cd3`](https://github.com/brendanjmeade/fennil/commit/9865cd319507633b23d94ddc39a98a9864959d65))
+
+### Refactoring
+
+- Split fault lines from slip lines
+  ([`8712ce9`](https://github.com/brendanjmeade/fennil/commit/8712ce9679dffd16b7bccf0bd32799988de92580))
+
+
 ## v1.3.0 (2026-02-18)
 
 ### Bug Fixes
