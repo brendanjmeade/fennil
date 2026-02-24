@@ -3,9 +3,9 @@ from urllib.parse import quote
 import numpy as np
 import pandas as pd
 
+from fennil.app.deck.primitives import icon_layers, line_layers
 from fennil.app.geo_projs import normalize_longitude_difference, web_mercator_to_wgs84
 
-from .primitives import icon_layers, line_layers
 from .styles import (
     VECTOR_ARROW_MAX_PIXELS,
     VECTOR_ARROW_MIN_PIXELS,

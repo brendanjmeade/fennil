@@ -1,6 +1,6 @@
-from fennil.app.deck.faults import fault_projection_layers
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.faults import fault_projection_layers
 
 SPEC = FieldSpec(
     priority=30,

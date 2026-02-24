@@ -3,11 +3,11 @@ from pathlib import Path
 
 from fennil.app.registry import FIELD_REGISTRY
 
-VIZ_DIRECTORY = Path(__file__).parent
+FIELDS_DIRECTORY = Path(__file__).parent / "fields"
 
 
 def load_all_viz():
-    for f in VIZ_DIRECTORY.glob("*.py"):
+    for f in sorted(FIELDS_DIRECTORY.glob("*.py")):
         if f.name.startswith("_"):
             continue
 

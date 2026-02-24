@@ -1,6 +1,6 @@
-from fennil.app.deck.stations import station_layers
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.stations import station_layers
 
 SPEC = FieldSpec(
     priority=0,

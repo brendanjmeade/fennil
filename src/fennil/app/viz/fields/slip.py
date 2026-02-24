@@ -1,10 +1,10 @@
-from fennil.app.deck.faults import (
+from fennil.app.io import Dataset
+from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.faults import (
     REQUIRED_SEG_COLS,
     fault_line_dataframe,
     segment_slip_layers,
 )
-from fennil.app.io import Dataset
-from fennil.app.registry import FieldSpec, LayerContext
 
 SPEC = FieldSpec(
     priority=20,

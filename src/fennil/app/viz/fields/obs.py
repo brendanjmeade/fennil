@@ -1,19 +1,19 @@
-from fennil.app.deck.vectors import velocity_layers
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.vectors import velocity_layers
 
 SPEC = FieldSpec(
-    priority=15,
-    label="Tri",
+    priority=10,
+    label="Obs",
     icon="mdi-vector-line",
     ui_type="VCheckbox",
     options=None,
     default=False,
     styles={
-        "icon_color": "rgba(205, 133, 0, 0.78)",
+        "icon_color": "rgba(0, 0, 205, 1)",
         "colors": [
-            (205, 133, 0, 200),
-            (205, 133, 0, 200),
+            (0, 0, 205, 255),
+            (0, 0, 205, 255),
         ],
         "line_width": (1, 2),
     },
@@ -27,12 +27,12 @@ def builder(name: str, ctx: LayerContext):
     for idx, dataset in ctx.enabled_datasets(name):
         ctx.vector_layers.extend(
             velocity_layers(
-                "tde_vel",
+                "obs_vel",
                 dataset.data.station,
                 dataset.data.x_station,
                 dataset.data.y_station,
-                dataset.data.station.model_east_vel_tde.values,
-                dataset.data.station.model_north_vel_tde.values,
+                dataset.data.station.east_vel.values,
+                dataset.data.station.north_vel.values,
                 ctx.specs[name]["styles"]["colors"][idx],
                 ctx.specs[name]["styles"]["line_width"][idx],
                 dataset.name,

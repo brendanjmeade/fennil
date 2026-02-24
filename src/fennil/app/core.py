@@ -9,10 +9,10 @@ from fennil.app.io import load_folder_data
 
 from .components import FileBrowser, Scale
 from .deck import build_deck, mapbox
-from .deck.fault_lines import build_fault_lines
 from .registry import FIELD_REGISTRY, LayerContext
 from .state import DatasetVisualization, MapSettings
 from .viz import load_all_viz
+from .viz.fault_lines import build_fault_lines
 
 
 class FennilApp(TrameApp):

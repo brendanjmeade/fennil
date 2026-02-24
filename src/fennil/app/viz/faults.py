@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from .primitives import line_layers, polygon_layers
+from fennil.app.deck.primitives import line_layers, polygon_layers
+
 from .styles import (
     FAULT_PROJ_LINE_WIDTH,
     SLIP_NEGATIVE_COLOR,

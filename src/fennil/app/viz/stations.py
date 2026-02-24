@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .primitives import scatter_layers
+from fennil.app.deck.primitives import scatter_layers
 
 
 def station_layers(folder_number, station, color):

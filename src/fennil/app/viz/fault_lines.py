@@ -1,4 +1,4 @@
-from fennil.app.deck.faults import fault_line_layers
+from .faults import fault_line_layers
 
 # Keep base fault colors stable and distinct per dataset.
 FAULT_LINE_COLORS = [
