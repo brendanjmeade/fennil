@@ -89,7 +89,7 @@ class FennilApp(TrameApp):
             with v3.VNavigationDrawer(
                 permanent=True,
                 rail=("compact_drawer", False),
-                width=300,
+                width=340,
             ):
                 with v3.Template(v_slot_prepend=True):
                     with v3.VListItem(
