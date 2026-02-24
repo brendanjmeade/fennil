@@ -12,6 +12,7 @@ dependencies = [
     "trame-deckgl>=2.0.4",
     "trame-dataclass",
     "pydeck",
+    "python-dotenv",
     "numpy",
     "pandas<3",
 ]
