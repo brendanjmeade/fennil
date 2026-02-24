@@ -1,14 +1,12 @@
 ## fennil
 
-Attempt at a much faster rebuild of
-[`result_manager`](https://github.com/brendanjmeade/result_manager) for larger
-[`celeri`](https://github.com/brendanjmeade/celeri) models.
+![Fennil](https://github.com/brendanjmeade/fennil/blob/main/fennil.jpg)
 
 Viewer for kinematic earthquake simulations
 
-## License
-
-This library is OpenSource and follows the MIT License
+Interactively displays [`celeri`](https://github.com/brendanjmeade/celeri)
+models. `fennil` is a rebuild of the original
+[`result_manager`](https://github.com/brendanjmeade/result_manager).
 
 ## Installation
 
@@ -27,7 +25,7 @@ fennil
 ## Mapbox token
 
 Set a Mapbox access token so base maps render with Mapbox styles. Either export
-it in your shell or place it in a local `.env` (already gitignored):
+it in your shell or place it in a local `.env` file (for local development):
 
 ```console
 export FENNIL_MAP_BOX_TOKEN="YOUR_TOKEN_HERE"
@@ -45,32 +43,27 @@ We recommend using uv for setting up and managing a virtual environment for your
 development.
 
 ```console
-# Create venv and install all dependencies
-uv sync --all-extras --dev
-
-# Activate environment
+# Create venv and activate
+uv venv
 source .venv/bin/activate
 
-# Install commit analysis
-pre-commit install
-pre-commit install --hook-type commit-msg
-
-# Allow live code edit
+# Install & allow live code edit
 uv pip install -e .
+
+# Install all dev dependencies
+uv sync --all-extras --dev
 ```
 
-For running tests and checks, you can run `nox`.
+To run test/linting:
 
 ```console
-# run all
-nox
-
-# lint
-nox -s lint
-
-# tests
-nox -s tests
+pre-commit run --all
 ```
+
+## License
+
+This library is OpenSource and follows the MIT License. For more details, see
+[LICENSE](https://github.com/brendanjmeade/fennil/blob/main/LICENSE)
 
 ## Commit message convention
 
