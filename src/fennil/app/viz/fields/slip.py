@@ -30,7 +30,7 @@ SPEC = FieldSpec(
 def builder(name: str, ctx: LayerContext):
     for idx, dataset in ctx.enabled_datasets(name):
         folder_number = idx + 1
-        seg_tooltip_enabled = not idx  # show tooltip only for first dataset
+        seg_tooltip_enabled = True
         fault_lines_df = fault_line_dataframe(dataset.data.segment, seg_tooltip_enabled)
         ctx.layers.extend(
             segment_slip_layers(

@@ -14,7 +14,7 @@ def build_fault_lines(ctx):
             continue
 
         folder_number = idx + 1
-        seg_tooltip_enabled = not idx
+        seg_tooltip_enabled = True
         fault_layers, _ = fault_line_layers(
             folder_number,
             dataset.data.segment,
