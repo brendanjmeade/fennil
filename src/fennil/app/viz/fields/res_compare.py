@@ -5,7 +5,7 @@ from fennil.app.viz.res_compare import residual_compare_layers
 SPEC = FieldSpec(
     priority=50,
     label="Res compare",
-    icon="mdi-vector-difference",
+    icon="mdi-circle-multiple",
     ui_type="VCheckbox",
     options=None,
     default=False,
