@@ -20,9 +20,6 @@ SPEC = FieldSpec(
 
 
 def builder(name: str, ctx: LayerContext):
-    if ctx.skip(name):
-        return
-
     right = ctx.datasets[0]
     left = ctx.datasets[1]
     if not (right.enabled and left.enabled):
@@ -30,7 +27,7 @@ def builder(name: str, ctx: LayerContext):
     if right.data is None or left.data is None:
         return
 
-    slip_type = left.fields.get(name) or right.fields.get(name)
+    slip_type = left.fields.get(name)
     if slip_type not in {"ss", "ds"}:
         return
 

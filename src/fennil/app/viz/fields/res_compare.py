@@ -22,14 +22,13 @@ SPEC = FieldSpec(
 
 
 def builder(name: str, ctx: LayerContext):
-    if ctx.skip(name):
-        return
-
     right = ctx.datasets[0]
     left = ctx.datasets[1]
     if not (right.enabled and left.enabled):
         return
     if right.data is None or left.data is None:
+        return
+    if not left.fields.get(name):
         return
 
     ctx.layers.extend(
