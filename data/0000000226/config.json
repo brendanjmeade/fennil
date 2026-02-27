@@ -1,0 +1,459 @@
+{
+    "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/config/japan_config_001_segmesh.json",
+    "base_runs_folder": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/runs",
+    "output_path": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/runs/0000000226",
+    "block_file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/block/japan_block.csv",
+    "station_file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/station/japan_station.csv",
+    "segment_file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/segment/japan_segment_001_segmesh.csv",
+    "mogi_file_name": null,
+    "sar_file_name": null,
+    "mesh_parameters_file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+    "mesh_params": [
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/nankai.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 50,
+            "n_modes_dip_slip": 50,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 50,
+            "n_modes_dip_slip": 50,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/sagami.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_segment_001_segmesh0.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_segment_001_segmesh1.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_segment_001_segmesh2.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_segment_001_segmesh3.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        },
+        {
+            "file_name": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_mesh_001_segmesh.json",
+            "mesh_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh/japan_segment_001_segmesh4.msh",
+            "smoothing_weight": 1e18,
+            "n_modes_strike_slip": 10,
+            "n_modes_dip_slip": 10,
+            "top_slip_rate_constraint": 0,
+            "bot_slip_rate_constraint": 0,
+            "side_slip_rate_constraint": 0,
+            "top_slip_rate_weight": 100.0,
+            "bot_slip_rate_weight": 100.0,
+            "side_slip_rate_weight": 100.0,
+            "eigenmode_slip_rate_constraint_weight": 10.0,
+            "top_elastic_constraint_sigma": 0.5,
+            "bot_elastic_constraint_sigma": 0.5,
+            "side_elastic_constraint_sigma": 0.5,
+            "a_priori_slip_filename": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/mesh",
+            "coupling_constraints_ss": {
+                "lower": 0.0,
+                "upper": 1.0
+            },
+            "coupling_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ss": {
+                "lower": null,
+                "upper": null
+            },
+            "elastic_constraints_ds": {
+                "lower": null,
+                "upper": null
+            },
+            "sqp_kinematic_slip_rate_hint_ss": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "sqp_kinematic_slip_rate_hint_ds": {
+                "lower": -100.0,
+                "upper": 100.0
+            },
+            "iterative_coupling_linear_slip_rate_reduction_factor": 0.025,
+            "iterative_coupling_smoothing_length_scale": null,
+            "iterative_coupling_kinematic_slip_regularization_scale": 1.0,
+            "matern_nu": 0.5,
+            "matern_length_scale": 1.0,
+            "matern_length_units": "diameters",
+            "eigenvector_algorithm": "eigsh"
+        }
+    ],
+    "elastic_operator_cache_dir": "/Users/jloveles/Documents/python/celeri_projects/projects/japan/data/operators",
+    "force_recompute": false,
+    "block_constraint_weight": 1e24,
+    "slip_constraint_weight": 1000000.0,
+    "segment_slip_rate_regularization": 1.0,
+    "segment_slip_rate_bound_weight": 100.0,
+    "segment_slip_rate_hard_bounds": false,
+    "segment_slip_rate_regularization_sigma": 10.0,
+    "segment_slip_rate_bound_sigma": 1.0,
+    "sqp2_objective": "qr_sum_of_squares",
+    "locking_depth_flag2": 25,
+    "locking_depth_flag3": 15,
+    "locking_depth_flag4": 10,
+    "locking_depth_flag5": 5,
+    "locking_depth_override_flag": 0,
+    "lat_range": [
+        30.0,
+        52.0
+    ],
+    "lon_range": [
+        225.0,
+        250.0
+    ],
+    "plot_estimation_summary": true,
+    "plot_input_summary": true,
+    "quiver_scale": 100,
+    "material_lambda": 30000000000,
+    "material_mu": 30000000000,
+    "poissons_ratio": null,
+    "pickle_save": false,
+    "repl": false,
+    "save_operators": true,
+    "snap_segments": 0,
+    "solve_type": "qp2",
+    "tri_con_weight": 100,
+    "unit_sigmas": false,
+    "iterative_coupling_bounds_total_percentage_satisfied_target": null,
+    "iterative_coupling_bounds_max_iter": null,
+    "mcmc_tune": null,
+    "mcmc_draws": null,
+    "mcmc_seed": null,
+    "mcmc_chains": 1,
+    "mcmc_backend": "numba",
+    "mesh_default_eigenvector_algorithm": "eigsh",
+    "mcmc_station_velocity_method": "project_to_eigen",
+    "mcmc_station_weighting": "voronoi",
+    "mcmc_station_effective_area": 100000000.0,
+    "sqp2_annealing_enabled": false,
+    "sqp2_annealing_schedule": [
+        0.125,
+        0.125,
+        0.125
+    ],
+    "mesh_file_names": null
+}
