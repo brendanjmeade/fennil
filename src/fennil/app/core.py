@@ -265,12 +265,13 @@ class FennilApp(TrameApp):
                             classes="pa-0 d-flex flex-column align-center",
                         ):
                             with html.Div(
-                                v_for="data, i in [left.enabled ? left : right]",
+                                v_for="data, i in (left.enabled ? [left, right] : [right])",
                                 key="i",
                                 classes="pa-0 d-flex flex-column align-center",
+                                v_show="data.enabled",
                             ):
                                 v3.VChip(
-                                    "{{ field_specs[name].label || name }} {{ typeof data.fields[name] === 'string' ? data.fields[name].toUpperCase() : null }}",
+                                    "{{ ((field_specs[name].label || name).replace(' compare', ' cmp')) }} {{ typeof data.fields[name] === 'string' ? data.fields[name].toUpperCase() : null }}",
                                     label=True,
                                     classes="text-capitalize my-1",
                                     v_for="name, i in data.available_fields",
