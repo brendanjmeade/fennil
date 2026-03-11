@@ -82,7 +82,6 @@ repos:
     rev: "v0.23"
     hooks:
       - id: validate-pyproject
-        additional_dependencies: ["validate-pyproject-schema-store[all]"]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: "0.31.0"
