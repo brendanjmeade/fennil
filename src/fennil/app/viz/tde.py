@@ -1,6 +1,6 @@
 from fennil.app.deck.primitives import line_layers, polygon_layers
 
-from .styles import BLACK, RED, map_slip_colors
+from .styles import BLACK, RED, map_coupling_colors, map_slip_colors
 
 
 def tde_mesh_layers(folder_number, tde_df, slip_values):
@@ -10,6 +10,24 @@ def tde_mesh_layers(folder_number, tde_df, slip_values):
     tde_df["color"] = map_slip_colors(slip_values)
     return polygon_layers(
         "tde",
+        tde_df,
+        "color",
+        [0, 0, 0, 0],
+        0,
+        folder_number,
+        line_width_min_pixels=0,
+        stroked=False,
+        pickable=False,
+    )
+
+
+def tde_coupling_layers(folder_number, tde_df, coupling_values):
+    if tde_df is None or tde_df.empty:
+        return []
+    tde_df = tde_df.copy()
+    tde_df["color"] = map_coupling_colors(coupling_values)
+    return polygon_layers(
+        "tde_coupling",
         tde_df,
         "color",
         [0, 0, 0, 0],

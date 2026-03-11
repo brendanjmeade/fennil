@@ -18,6 +18,7 @@ class FieldSpec:
 
     def to_dict(self):
         return {
+            "priority": self.priority,
             "label": self.label,
             "icon": self.icon,
             "type": self.ui_type,
@@ -38,7 +39,17 @@ class LayerContext:
 
     @property
     def field_names(self):
-        return self.datasets[0].available_fields
+        names = []
+        seen = set()
+        for dataset in self.datasets:
+            if not dataset.enabled:
+                continue
+            for name in dataset.available_fields:
+                if name in seen:
+                    continue
+                seen.add(name)
+                names.append(name)
+        return names
 
     @property
     def all_layers(self):

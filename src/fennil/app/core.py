@@ -157,9 +157,18 @@ class FennilApp(TrameApp):
                                                 click=(self.reset_dataset, "[0]"),
                                             )
                                             html.Div("{{ right.name }}")
+
+                            table_field_rows_expr = (
+                                "(left.enabled ? left.available_fields.concat("
+                                "right.available_fields.filter((name) => !left.available_fields.includes(name))"
+                                ") : right.available_fields)"
+                                ".slice().sort((a, b) => (field_specs[a]?.priority ?? 999) - (field_specs[b]?.priority ?? 999))"
+                            )
+                            table_columns_expr = "left.enabled ? [{data: left, idx: 1}, {data: right, idx: 0}] : [{data: right, idx: 0}]"
+
                             with html.Tbody():
                                 with html.Tr(
-                                    v_for="name, i in (left.enabled ? left.available_fields : right.available_fields)",
+                                    v_for=f"name, i in {table_field_rows_expr}",
                                     key="i",
                                     v_show="field_specs[name].multiple || left.enabled",
                                 ):
@@ -181,7 +190,7 @@ class FennilApp(TrameApp):
                                             )
                                     with v3.Template(v_if="field_specs[name].multiple"):
                                         with html.Td(
-                                            v_for="col, i in (left.enabled ? [{data: left, idx: 1}, {data: right, idx: 0}] : [{data: right, idx: 0}])",
+                                            v_for=f"col, i in {table_columns_expr}",
                                             key="i",
                                             v_show="col.data.enabled",
                                         ):
@@ -190,7 +199,7 @@ class FennilApp(TrameApp):
                                                 v_if="col.data.enabled",
                                             ):
                                                 v3.VCheckbox(
-                                                    v_if="field_specs[name]?.type === 'VCheckbox'",
+                                                    v_if="col.data.available_fields.includes(name) && field_specs[name]?.type === 'VCheckbox'",
                                                     v_model="col.data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",
@@ -200,7 +209,7 @@ class FennilApp(TrameApp):
                                                     ),
                                                 )
                                                 with v3.VBtnToggle(
-                                                    v_if="field_specs[name]?.type === 'VBtnToggle'",
+                                                    v_if="col.data.available_fields.includes(name) && field_specs[name]?.type === 'VBtnToggle'",
                                                     v_model="col.data.fields[name]",
                                                     hide_details=True,
                                                     density="compact",

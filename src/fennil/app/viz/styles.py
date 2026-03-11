@@ -47,20 +47,31 @@ BLACK = [0, 0, 0, 255]
 
 SLIP_RATE_MIN = -100.0
 SLIP_RATE_MAX = 100.0
+COUPLING_MIN = -1.0
+COUPLING_MAX = 1.0
 
 
-def map_slip_colors(values):
-    """Map slip values to discrete RdBu[11] colors."""
+def map_discrete_colors(values, value_min, value_max, palette):
     colors_array = []
-    span = SLIP_RATE_MAX - SLIP_RATE_MIN
+    span = value_max - value_min
+    if span <= 0:
+        span = 1.0
     for raw_value in values:
         value = raw_value
         if not np.isfinite(value):
             value = 0.0
-        value = float(np.clip(value, SLIP_RATE_MIN, SLIP_RATE_MAX))
-        position = (value - SLIP_RATE_MIN) / span
-        index = int(np.floor(position * len(RDBU_11)))
-        index = max(0, min(len(RDBU_11) - 1, index))
-        r, g, b = RDBU_11[index]
+        value = float(np.clip(value, value_min, value_max))
+        position = (value - value_min) / span
+        index = int(np.floor(position * len(palette)))
+        index = max(0, min(len(palette) - 1, index))
+        r, g, b = palette[index]
         colors_array.append([r, g, b, 255])
     return colors_array
+
+
+def map_slip_colors(values):
+    return map_discrete_colors(values, SLIP_RATE_MIN, SLIP_RATE_MAX, RDBU_11)
+
+
+def map_coupling_colors(values):
+    return map_discrete_colors(values, COUPLING_MIN, COUPLING_MAX, RDBU_11)

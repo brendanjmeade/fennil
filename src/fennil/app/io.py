@@ -159,7 +159,7 @@ def build_tde_data(meshes):
     )
     norm_vec = np.cross(tri_leg1, tri_leg2)
     tri_area = np.linalg.norm(norm_vec, axis=1)
-    azimuth, elevation, r = cart2sph(norm_vec[:, 0], norm_vec[:, 1], norm_vec[:, 2])
+    azimuth, elevation, _r = cart2sph(norm_vec[:, 0], norm_vec[:, 1], norm_vec[:, 2])
     strike = wrap2360(-np.rad2deg(azimuth))
     dip = 90 - np.rad2deg(elevation)
     dip[dip > 90] = 180.0 - dip[dip > 90]
@@ -219,7 +219,7 @@ def build_tde_data(meshes):
         (edge1_array_unsorted, edge2_array_unsorted, edge3_array_unsorted), axis=1
     )
 
-    unique_edges, unique_edge_index, edge_count = np.unique(
+    _unique_edges, unique_edge_index, edge_count = np.unique(
         all_edge_array, return_index=True, return_counts=True, axis=1
     )
     unique_edges_unsorted = all_edge_array_unsorted[:, unique_edge_index]
@@ -234,20 +234,28 @@ def build_tde_data(meshes):
 
     tde_df = None
     if mesh_plot_order_index.size:
-        tde_df = pd.DataFrame(
-            {
-                "polygon": [
-                    [
-                        [lon1_mesh[j], lat1_mesh[j]],
-                        [lon2_mesh[j], lat2_mesh[j]],
-                        [lon3_mesh[j], lat3_mesh[j]],
-                    ]
-                    for j in mesh_plot_order_index
-                ],
-                "ss_rate": meshes["strike_slip_rate"].to_numpy()[mesh_plot_order_index],
-                "ds_rate": meshes["dip_slip_rate"].to_numpy()[mesh_plot_order_index],
-            }
-        )
+        tde_data = {
+            "polygon": [
+                [
+                    [lon1_mesh[j], lat1_mesh[j]],
+                    [lon2_mesh[j], lat2_mesh[j]],
+                    [lon3_mesh[j], lat3_mesh[j]],
+                ]
+                for j in mesh_plot_order_index
+            ],
+            "ss_rate": meshes["strike_slip_rate"].to_numpy()[mesh_plot_order_index],
+            "ds_rate": meshes["dip_slip_rate"].to_numpy()[mesh_plot_order_index],
+        }
+        if "strike_slip_coupling" in meshes.columns:
+            tde_data["ss_coupling"] = meshes["strike_slip_coupling"].to_numpy()[
+                mesh_plot_order_index
+            ]
+        if "dip_slip_coupling" in meshes.columns:
+            tde_data["ds_coupling"] = meshes["dip_slip_coupling"].to_numpy()[
+                mesh_plot_order_index
+            ]
+
+        tde_df = pd.DataFrame(tde_data)
 
     tde_perim_df = None
     if perim_edges.size:
