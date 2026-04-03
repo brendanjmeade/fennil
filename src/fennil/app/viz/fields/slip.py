@@ -18,11 +18,6 @@ SPEC = FieldSpec(
     default=None,
     styles={
         "icon_color": "#1976D2",
-        "colors": [
-            (0, 0, 255, 255),
-            (0, 128, 0, 255),
-        ],
-        "line_width": (1, 1),
     },
 )
 

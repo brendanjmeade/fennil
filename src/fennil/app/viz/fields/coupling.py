@@ -1,5 +1,6 @@
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.styles import COUPLING_MAX, COUPLING_MIN
 from fennil.app.viz.tde import tde_coupling_layers, tde_perimeter_layers
 
 REQUIRED_COUPLING_COLS = {"strike_slip_coupling", "dip_slip_coupling"}
@@ -16,6 +17,11 @@ SPEC = FieldSpec(
     default=None,
     styles={
         "icon_color": "rgba(111, 66, 193, 1)",
+        "color_map_range": {
+            "palette": "RDBU_11",
+            "min": COUPLING_MIN,
+            "max": COUPLING_MAX,
+        },
     },
 )
 
@@ -23,6 +29,15 @@ SPEC = FieldSpec(
 def builder(name: str, ctx: LayerContext):
     if ctx.skip(name):
         return
+
+    styles = ctx.specs[name].get("styles", {})
+    color_map_range = styles.get("color_map_range", {})
+    try:
+        value_min = float(color_map_range.get("min", COUPLING_MIN))
+        value_max = float(color_map_range.get("max", COUPLING_MAX))
+    except (TypeError, ValueError):
+        value_min = COUPLING_MIN
+        value_max = COUPLING_MAX
 
     for idx, dataset in ctx.enabled_datasets(name):
         folder_number = idx + 1
@@ -39,7 +54,13 @@ def builder(name: str, ctx: LayerContext):
 
             if coupling_values is not None:
                 ctx.tde_layers.extend(
-                    tde_coupling_layers(folder_number, tde_df, coupling_values)
+                    tde_coupling_layers(
+                        folder_number,
+                        tde_df,
+                        coupling_values,
+                        value_min,
+                        value_max,
+                    )
                 )
                 ctx.tde_layers.extend(tde_perimeter_layers(folder_number, tde_perim_df))
 

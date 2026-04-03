@@ -1,6 +1,16 @@
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
 from fennil.app.viz.faults import fault_projection_layers
+from fennil.app.viz.styles import dataset_value, normalize_dataset_values
+
+FAULT_PROJ_FILL_DEFAULT = [
+    (173, 216, 230, 77),
+    (144, 238, 144, 77),
+]
+FAULT_PROJ_LINE_DEFAULT = [
+    (0, 0, 255, 255),
+    (0, 128, 0, 255),
+]
 
 SPEC = FieldSpec(
     priority=30,
@@ -10,19 +20,7 @@ SPEC = FieldSpec(
     options=None,
     default=False,
     styles={
-        "colors": [
-            (128, 128, 128, 255),
-            (128, 128, 128, 255),
-        ],
-        "line_width": (1, 2),
-        "fill": [
-            (173, 216, 230, 77),
-            (144, 238, 144, 77),
-        ],
-        "line": [
-            (0, 0, 255, 255),
-            (0, 128, 0, 255),
-        ],
+        "fill": FAULT_PROJ_FILL_DEFAULT,
     },
 )
 
@@ -31,13 +29,17 @@ def builder(name: str, ctx: LayerContext):
     if ctx.skip(name):
         return
 
+    styles = ctx.specs[name].get("styles", {})
+    fill_values = normalize_dataset_values(styles.get("fill"), FAULT_PROJ_FILL_DEFAULT)
+    line_values = normalize_dataset_values(styles.get("line"), FAULT_PROJ_LINE_DEFAULT)
+
     for idx, dataset in ctx.enabled_datasets(name):
         ctx.layers.extend(
             fault_projection_layers(
                 dataset.name,
                 dataset.data.fault_proj_df,
-                ctx.specs[name]["styles"]["fill"][idx],
-                ctx.specs[name]["styles"]["line"][idx],
+                dataset_value(fill_values, idx),
+                dataset_value(line_values, idx),
             )
         )
 

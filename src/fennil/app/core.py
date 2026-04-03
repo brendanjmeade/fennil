@@ -7,12 +7,16 @@ from trame_dataclass.core import get_instance
 
 from fennil.app.io import load_folder_data
 
-from .components import FileBrowser, Scale
+from .components import FileBrowser, Scale, StyleEditor
 from .deck import build_deck, mapbox
 from .registry import FIELD_REGISTRY, LayerContext
 from .state import DatasetVisualization, MapSettings
 from .viz import load_all_viz
-from .viz.fault_lines import build_fault_lines
+from .viz.fault_lines import (
+    FAULT_LINES_STYLE_KEY,
+    build_fault_lines,
+    fault_line_style_spec,
+)
 
 
 class FennilApp(TrameApp):
@@ -34,10 +38,14 @@ class FennilApp(TrameApp):
         self.map_params = MapSettings(self.server)
         for viz_config in self._datasets:
             viz_config.watch(["fields", "enabled"], self._update_layers)
-        self.state.field_specs = FIELD_REGISTRY.export_specs()
+        field_specs = FIELD_REGISTRY.export_specs()
+        field_specs[FAULT_LINES_STYLE_KEY] = fault_line_style_spec()
+        self.state.field_specs = field_specs
+        self.style_editor = StyleEditor(self, self._datasets)
 
         # build ui
         self._build_ui()
+        self.style_editor.refresh()
 
     @change("scale", "field_specs")
     def _update_layers(self, *_, **__):
@@ -60,13 +68,16 @@ class FennilApp(TrameApp):
             self._datasets[1].attach_data(directory_path, dataset)
         else:
             self._datasets[0].attach_data(directory_path, dataset)
+        self.style_editor.refresh()
 
     def reset_dataset(self, index):
         if index == 0 and self._datasets[1].enabled:
             self._datasets[0].adopt(self._datasets[1])
             self._datasets[1].clear()
+            self.style_editor.refresh()
             return
         self._datasets[index].clear()
+        self.style_editor.refresh()
 
     def update_dataset_config(self, id, name, value):
         """Keep server in sync with client reactive nested structure"""
@@ -116,6 +127,11 @@ class FennilApp(TrameApp):
                         title=["compact_drawer ? null : 'Load Dataset'"],
                         click=self.ctx.file_browser.open,
                         prepend_icon="mdi-database-plus",
+                    )
+                    v3.VListItem(
+                        title=["compact_drawer ? null : 'Style Editor'"],
+                        click=self.style_editor.open,
+                        prepend_icon="mdi-tune-variant",
                     )
 
                 with self._datasets[0].provide_as("right"):
@@ -297,6 +313,8 @@ class FennilApp(TrameApp):
                         v_else=True,
                         classes="text-center text-caption",
                     )
+
+            self.style_editor.build_ui()
 
             # -----------------------------------------------------------------
             # Map

@@ -69,9 +69,37 @@ def map_discrete_colors(values, value_min, value_max, palette):
     return colors_array
 
 
-def map_slip_colors(values):
-    return map_discrete_colors(values, SLIP_RATE_MIN, SLIP_RATE_MAX, RDBU_11)
+def map_slip_colors(values, value_min=SLIP_RATE_MIN, value_max=SLIP_RATE_MAX):
+    return map_discrete_colors(values, value_min, value_max, RDBU_11)
 
 
-def map_coupling_colors(values):
-    return map_discrete_colors(values, COUPLING_MIN, COUPLING_MAX, RDBU_11)
+def map_coupling_colors(values, value_min=COUPLING_MIN, value_max=COUPLING_MAX):
+    return map_discrete_colors(values, value_min, value_max, RDBU_11)
+
+
+def normalize_dataset_values(raw_values, default_values):
+    """Return exactly two style values ordered as [right, left]."""
+    values = list(raw_values) if isinstance(raw_values, list | tuple) else []
+
+    if not values:
+        values = list(default_values)
+
+    if not values:
+        return [None, None]
+
+    if len(values) == 1:
+        return [values[0], values[0]]
+
+    return [values[0], values[1]]
+
+
+def dataset_value(two_values, dataset_index):
+    return two_values[0] if dataset_index == 0 else two_values[1]
+
+
+def dataset_float_value(two_values, dataset_index, fallback):
+    raw_value = dataset_value(two_values, dataset_index)
+    try:
+        return float(raw_value)
+    except (TypeError, ValueError):
+        return float(fallback)

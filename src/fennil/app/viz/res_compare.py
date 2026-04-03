@@ -29,13 +29,15 @@ CIRCLE_ICON = {
 }
 
 
-def _map_residual_diff_colors(values):
+def _map_residual_diff_colors(values, value_min, value_max):
     colors = []
-    span = RES_COMPARE_DIFF_MAX - RES_COMPARE_DIFF_MIN
+    span = value_max - value_min
+    if span <= 0:
+        span = 1.0
     for raw_value in values:
         value = raw_value if np.isfinite(raw_value) else 0.0
-        value = float(np.clip(value, RES_COMPARE_DIFF_MIN, RES_COMPARE_DIFF_MAX))
-        position = (value - RES_COMPARE_DIFF_MIN) / span
+        value = float(np.clip(value, value_min, value_max))
+        position = (value - value_min) / span
         color_index = int(np.floor(position * len(RDBU_11)))
         color_index = max(0, min(len(RDBU_11) - 1, color_index))
         r, g, b = RDBU_11[color_index]
@@ -53,7 +55,13 @@ def _residual_station_data(dataset):
     )
 
 
-def residual_compare_layers(right_dataset, left_dataset, velocity_scale):
+def residual_compare_layers(
+    right_dataset,
+    left_dataset,
+    velocity_scale,
+    value_min=RES_COMPARE_DIFF_MIN,
+    value_max=RES_COMPARE_DIFF_MAX,
+):
     right = _residual_station_data(right_dataset)
     left = _residual_station_data(left_dataset)
 
@@ -89,7 +97,7 @@ def residual_compare_layers(right_dataset, left_dataset, velocity_scale):
                 "lat": common["lat"].to_numpy(),
                 "res_mag_diff": res_mag_diff,
                 "size": sized_res_mag_diff,
-                "color": _map_residual_diff_colors(res_mag_diff),
+                "color": _map_residual_diff_colors(res_mag_diff, value_min, value_max),
                 "icon": [CIRCLE_ICON] * len(common),
             }
         )

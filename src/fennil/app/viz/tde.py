@@ -3,11 +3,15 @@ from fennil.app.deck.primitives import line_layers, polygon_layers
 from .styles import BLACK, RED, map_coupling_colors, map_slip_colors
 
 
-def tde_mesh_layers(folder_number, tde_df, slip_values):
+def tde_mesh_layers(folder_number, tde_df, slip_values, value_min, value_max):
     if tde_df is None or tde_df.empty:
         return []
     tde_df = tde_df.copy()
-    tde_df["color"] = map_slip_colors(slip_values)
+    tde_df["color"] = map_slip_colors(
+        slip_values,
+        value_min=value_min,
+        value_max=value_max,
+    )
     return polygon_layers(
         "tde",
         tde_df,
@@ -21,11 +25,15 @@ def tde_mesh_layers(folder_number, tde_df, slip_values):
     )
 
 
-def tde_coupling_layers(folder_number, tde_df, coupling_values):
+def tde_coupling_layers(folder_number, tde_df, coupling_values, value_min, value_max):
     if tde_df is None or tde_df.empty:
         return []
     tde_df = tde_df.copy()
-    tde_df["color"] = map_coupling_colors(coupling_values)
+    tde_df["color"] = map_coupling_colors(
+        coupling_values,
+        value_min=value_min,
+        value_max=value_max,
+    )
     return polygon_layers(
         "tde_coupling",
         tde_df,
