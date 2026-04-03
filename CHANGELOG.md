@@ -2,6 +2,49 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-04-03)
+
+### Bug Fixes
+
+- Add collapsed drawer chips for right sim
+  ([`282d5d9`](https://github.com/brendanjmeade/fennil/commit/282d5d990b7fd6e865a3efedbe6ef2247a794701))
+
+- Enable tooltips for both datasets
+  ([`e34cdf7`](https://github.com/brendanjmeade/fennil/commit/e34cdf73a0962b3a7acd4af5e06b0fd9e52c15dd))
+
+- Fix bug where comparisons persisted after removing right dataset
+  ([`5c0b299`](https://github.com/brendanjmeade/fennil/commit/5c0b299a79a409fbdb4325e0f482af72bd54d1f9))
+
+### Chores
+
+- Added newer Japan model with coupling columns
+  ([`562f7a5`](https://github.com/brendanjmeade/fennil/commit/562f7a5a44c0d56fa453fd139ba33b68899760a2))
+
+- Update readme
+  ([`9dfa636`](https://github.com/brendanjmeade/fennil/commit/9dfa636677d86a9f1f7cdb0cd9afceba23e5a498))
+
+### Continuous Integration
+
+- Update broken dependency
+  ([`c8bff42`](https://github.com/brendanjmeade/fennil/commit/c8bff42009f3ea32b3a7c1d26909eb3c1008e479))
+
+### Features
+
+- Add coupling mesh viz
+  ([`7a64a8f`](https://github.com/brendanjmeade/fennil/commit/7a64a8f8b78b7c003aa60b925587e17d4a64f6f1))
+
+- Add slip_compare button
+  ([`238182e`](https://github.com/brendanjmeade/fennil/commit/238182e24c90d66a7a79c648578e5ed8dcabca7f))
+
+- **style**: Add style editor
+  ([`359b1f1`](https://github.com/brendanjmeade/fennil/commit/359b1f1a9a7f6d8a2f6829299e1dc6ba91cebe4f))
+
+### Refactoring
+
+- Move viz code from deck/ to viz/
+  ([`c2f5674`](https://github.com/brendanjmeade/fennil/commit/c2f567491731655ec88b7d35ee461ad7dde0a721))
+
+
 ## v1.4.0 (2026-02-24)
 
 ### Bug Fixes
