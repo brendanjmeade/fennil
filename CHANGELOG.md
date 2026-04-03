@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.5.1 (2026-04-03)
+
+### Bug Fixes
+
+- Update image URL for pypi
+  ([`73c60c5`](https://github.com/brendanjmeade/fennil/commit/73c60c57eaee300a6d78f4950567368fc8b2a049))
+
+
 ## v1.5.0 (2026-04-03)
 
 ### Bug Fixes
