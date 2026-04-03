@@ -1,6 +1,6 @@
 ## fennil
 
-![Fennil](https://github.com/brendanjmeade/fennil/blob/main/fennil.jpg)
+![Fennil](https://raw.githubusercontent.com/brendanjmeade/fennil/main/fennil.jpg)
 
 Viewer for kinematic earthquake simulations
 
