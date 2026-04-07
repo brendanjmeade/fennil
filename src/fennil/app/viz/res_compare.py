@@ -5,8 +5,8 @@ import pandas as pd
 
 from fennil.app.deck.primitives import icon_layers
 
+from .colormaps import DEFAULT_COLORMAP_NAME, DEFAULT_N_COLORS, map_discrete_colors
 from .styles import (
-    RDBU_11,
     RES_COMPARE_DIFF_MAX,
     RES_COMPARE_DIFF_MIN,
     RES_COMPARE_SIZE_SCALE,
@@ -29,20 +29,24 @@ CIRCLE_ICON = {
 }
 
 
-def _map_residual_diff_colors(values, value_min, value_max):
-    colors = []
-    span = value_max - value_min
-    if span <= 0:
-        span = 1.0
-    for raw_value in values:
-        value = raw_value if np.isfinite(raw_value) else 0.0
-        value = float(np.clip(value, value_min, value_max))
-        position = (value - value_min) / span
-        color_index = int(np.floor(position * len(RDBU_11)))
-        color_index = max(0, min(len(RDBU_11) - 1, color_index))
-        r, g, b = RDBU_11[color_index]
-        colors.append([r, g, b, 220])
-    return colors
+def _map_residual_diff_colors(
+    values,
+    value_min,
+    value_max,
+    *,
+    palette_name,
+    n_colors,
+    invert=False,
+):
+    return map_discrete_colors(
+        values,
+        value_min=value_min,
+        value_max=value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        alpha=220,
+        invert=invert,
+    )
 
 
 def _residual_station_data(dataset):
@@ -61,6 +65,9 @@ def residual_compare_layers(
     velocity_scale,
     value_min=RES_COMPARE_DIFF_MIN,
     value_max=RES_COMPARE_DIFF_MAX,
+    palette_name=DEFAULT_COLORMAP_NAME,
+    n_colors=DEFAULT_N_COLORS,
+    invert=False,
 ):
     right = _residual_station_data(right_dataset)
     left = _residual_station_data(left_dataset)
@@ -97,7 +104,14 @@ def residual_compare_layers(
                 "lat": common["lat"].to_numpy(),
                 "res_mag_diff": res_mag_diff,
                 "size": sized_res_mag_diff,
-                "color": _map_residual_diff_colors(res_mag_diff, value_min, value_max),
+                "color": _map_residual_diff_colors(
+                    res_mag_diff,
+                    value_min,
+                    value_max,
+                    palette_name=palette_name,
+                    n_colors=n_colors,
+                    invert=invert,
+                ),
                 "icon": [CIRCLE_ICON] * len(common),
             }
         )

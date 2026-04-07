@@ -1,5 +1,6 @@
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.colormaps import DEFAULT_N_COLORS, parse_colormap_range
 from fennil.app.viz.res_compare import residual_compare_layers
 from fennil.app.viz.styles import RES_COMPARE_DIFF_MAX, RES_COMPARE_DIFF_MIN
 
@@ -16,6 +17,7 @@ SPEC = FieldSpec(
             "palette": "RDBU_11",
             "min": RES_COMPARE_DIFF_MIN,
             "max": RES_COMPARE_DIFF_MAX,
+            "n_colors": DEFAULT_N_COLORS,
         },
     },
     multiple=False,
@@ -33,21 +35,22 @@ def builder(name: str, ctx: LayerContext):
         return
 
     styles = ctx.specs[name].get("styles", {})
-    color_map_range = styles.get("color_map_range", {})
-    try:
-        value_min = float(color_map_range.get("min", RES_COMPARE_DIFF_MIN))
-        value_max = float(color_map_range.get("max", RES_COMPARE_DIFF_MAX))
-    except (TypeError, ValueError):
-        value_min = RES_COMPARE_DIFF_MIN
-        value_max = RES_COMPARE_DIFF_MAX
+    colormap = parse_colormap_range(
+        styles.get("color_map_range"),
+        default_min=RES_COMPARE_DIFF_MIN,
+        default_max=RES_COMPARE_DIFF_MAX,
+    )
 
     ctx.layers.extend(
         residual_compare_layers(
             right.data,
             left.data,
             ctx.velocity_scale,
-            value_min=value_min,
-            value_max=value_max,
+            value_min=colormap["min"],
+            value_max=colormap["max"],
+            palette_name=colormap["palette"],
+            n_colors=colormap["n_colors"],
+            invert=colormap["invert"],
         )
     )
 

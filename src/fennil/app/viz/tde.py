@@ -3,7 +3,17 @@ from fennil.app.deck.primitives import line_layers, polygon_layers
 from .styles import BLACK, RED, map_coupling_colors, map_slip_colors
 
 
-def tde_mesh_layers(folder_number, tde_df, slip_values, value_min, value_max):
+def tde_mesh_layers(
+    folder_number,
+    tde_df,
+    slip_values,
+    value_min,
+    value_max,
+    *,
+    palette_name,
+    n_colors,
+    invert=False,
+):
     if tde_df is None or tde_df.empty:
         return []
     tde_df = tde_df.copy()
@@ -11,6 +21,9 @@ def tde_mesh_layers(folder_number, tde_df, slip_values, value_min, value_max):
         slip_values,
         value_min=value_min,
         value_max=value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        invert=invert,
     )
     return polygon_layers(
         "tde",
@@ -25,7 +38,17 @@ def tde_mesh_layers(folder_number, tde_df, slip_values, value_min, value_max):
     )
 
 
-def tde_coupling_layers(folder_number, tde_df, coupling_values, value_min, value_max):
+def tde_coupling_layers(
+    folder_number,
+    tde_df,
+    coupling_values,
+    value_min,
+    value_max,
+    *,
+    palette_name,
+    n_colors,
+    invert=False,
+):
     if tde_df is None or tde_df.empty:
         return []
     tde_df = tde_df.copy()
@@ -33,6 +56,9 @@ def tde_coupling_layers(folder_number, tde_df, coupling_values, value_min, value
         coupling_values,
         value_min=value_min,
         value_max=value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        invert=invert,
     )
     return polygon_layers(
         "tde_coupling",

@@ -5,19 +5,24 @@ from trame.widgets import html
 from trame.widgets import vuetify3 as v3
 from trame_dataclass.core import StateDataModel, get_instance
 
-from fennil.app.viz.styles import RDBU_11, normalize_dataset_values
+from fennil.app.viz.colormaps import (
+    DEFAULT_COLORMAP_NAME,
+    DEFAULT_N_COLORS,
+    palette_entries,
+    palette_gradient_css,
+    parse_colormap_range,
+    resolve_palette_name,
+    sanitize_n_colors,
+)
+from fennil.app.viz.styles import normalize_dataset_values
 
-DEFAULT_PRESET = "RDBU_11"
+DEFAULT_PRESET = DEFAULT_COLORMAP_NAME
 DEFAULT_COLOR_RANGE = (0.0, 1.0)
-DEFAULT_N_COLORS = 11
 DEFAULT_PICKER_HEXA = "#000000ff"
 DEFAULT_COLORMAP_STEP = 1.0
 DEFAULT_COLORMAP_PRECISION = 0
 COUPLING_COLORMAP_STEP = 0.01
 COUPLING_COLORMAP_PRECISION = 2
-PALETTES = {
-    "RDBU_11": RDBU_11,
-}
 COLOR_STYLE_GROUPS = (
     ("colors", "Color"),
     ("fill", "Fill"),
@@ -32,6 +37,9 @@ DRAWER_FOOTER_STYLE = (
     "flex:0 0 auto;"
     "border-top:1px solid rgba(127,127,127,0.35);"
     "background:rgb(var(--v-theme-surface));"
+)
+COLORMAP_ITEM_STYLE = (
+    "height:14px;border:1px solid #666;border-radius:4px;overflow:hidden;"
 )
 
 
@@ -50,6 +58,8 @@ class ColorMapControl(StateDataModel):
     has_line: bool = False
     has_line_width: bool = False
     has_colormap: bool = False
+    colormap_menu: bool = False
+    colormap_search: str = ""
 
     colors_0_hexa: str = DEFAULT_PICKER_HEXA
     colors_1_hexa: str = DEFAULT_PICKER_HEXA
@@ -67,6 +77,10 @@ class ColorMapControl(StateDataModel):
     color_value_max: float = 1.0
     color_value_min_valid: bool = True
     color_value_max_valid: bool = True
+    colormap_preset: str = DEFAULT_PRESET
+    colormap_n_colors: int = DEFAULT_N_COLORS
+    colormap_invert: bool = False
+    colormap_use_log_scale: bool = False
     color_value_precision: int = DEFAULT_COLORMAP_PRECISION
     color_value_step: float = DEFAULT_COLORMAP_STEP
     color_range_min: float = DEFAULT_COLOR_RANGE[0]
@@ -97,6 +111,7 @@ class StyleEditor:
         self._state.style_editor_picker_hexa = DEFAULT_PICKER_HEXA
         self._state.style_editor_picker_control_id = ""
         self._state.style_editor_picker_field_name = ""
+        self._state.style_editor_colormaps = palette_entries(n_colors=96)
 
         self.refresh()
 
@@ -392,6 +407,13 @@ class StyleEditor:
 
                 color_map_range["min"] = float(value_min)
                 color_map_range["max"] = float(value_max)
+                color_map_range["palette"] = resolve_palette_name(
+                    control.colormap_preset
+                )
+                color_map_range["n_colors"] = sanitize_n_colors(
+                    control.colormap_n_colors,
+                    default=DEFAULT_N_COLORS,
+                )
                 styles["color_map_range"] = color_map_range
 
             spec["styles"] = styles
@@ -438,6 +460,16 @@ class StyleEditor:
                 name,
                 width_0,
                 width_1,
+            ),
+            sync=True,
+            eager=True,
+        )
+        control.watch(
+            ["colormap_preset", "colormap_n_colors"],
+            lambda preset, n_colors, name=field_name: self._sync_colormap_preview(
+                name,
+                preset,
+                n_colors,
             ),
             sync=True,
             eager=True,
@@ -496,32 +528,26 @@ class StyleEditor:
         if not control.has_colormap:
             return
 
-        value_min = self._to_float(
-            color_map_range.get("min", DEFAULT_COLOR_RANGE[0]),
-            DEFAULT_COLOR_RANGE[0],
-        )
-        value_max = self._to_float(
-            color_map_range.get("max", DEFAULT_COLOR_RANGE[1]),
-            DEFAULT_COLOR_RANGE[1],
-        )
-        preset = self._palette_name(color_map_range.get("palette", DEFAULT_PRESET))
-        invert = bool(color_map_range.get("invert", False))
-        use_log_scale = bool(color_map_range.get("use_log_scale", False))
-        n_colors = self._sanitize_n_colors(
-            color_map_range.get("n_colors", DEFAULT_N_COLORS)
+        colormap = parse_colormap_range(
+            color_map_range,
+            default_min=DEFAULT_COLOR_RANGE[0],
+            default_max=DEFAULT_COLOR_RANGE[1],
+            default_palette=DEFAULT_PRESET,
+            default_n_colors=DEFAULT_N_COLORS,
         )
 
-        control.color_range_min = value_min
-        control.color_range_max = value_max
-        control.color_value_min = value_min
-        control.color_value_max = value_max
+        control.color_range_min = colormap["min"]
+        control.color_range_max = colormap["max"]
+        control.color_value_min = colormap["min"]
+        control.color_value_max = colormap["max"]
         control.color_value_min_valid = True
         control.color_value_max_valid = True
-        control.lut_gradient = self._palette_gradient(
-            preset,
-            invert,
-            n_colors,
-            use_log_scale,
+        control.colormap_invert = colormap["invert"]
+        control.colormap_use_log_scale = colormap["use_log_scale"]
+        self._set_colormap_preview(
+            control,
+            colormap["palette"],
+            colormap["n_colors"],
         )
 
     def _dataset_labels(self):
@@ -543,6 +569,28 @@ class StyleEditor:
         if field_name == "coupling":
             return COUPLING_COLORMAP_STEP, COUPLING_COLORMAP_PRECISION
         return DEFAULT_COLORMAP_STEP, DEFAULT_COLORMAP_PRECISION
+
+    def _sync_colormap_preview(self, field_name, preset, n_colors):
+        control = self._controls.get(field_name)
+        if control is None:
+            return
+        if not control.has_colormap:
+            return
+        self._set_colormap_preview(control, preset, n_colors)
+
+    def _set_colormap_preview(self, control, preset, n_colors):
+        palette_name = resolve_palette_name(preset)
+        color_count = sanitize_n_colors(n_colors, default=DEFAULT_N_COLORS)
+        if control.colormap_preset != palette_name:
+            control.colormap_preset = palette_name
+        if control.colormap_n_colors != color_count:
+            control.colormap_n_colors = color_count
+        control.lut_gradient = palette_gradient_css(
+            palette_name,
+            n_colors=color_count,
+            invert=control.colormap_invert,
+            use_log_scale=control.colormap_use_log_scale,
+        )
 
     def _line_width_str_to_float(self, field_name, width_0, width_1):
         control = self._controls.get(field_name)
@@ -644,15 +692,68 @@ class StyleEditor:
     def _create_bottom_bar(self):
         with html.Div(
             classes="text-black d-flex align-center",
-            style="user-select:none;",
+            style="user-select:none;cursor:context-menu;",
         ):
+            with v3.VMenu(
+                v_model="config.colormap_menu",
+                activator="parent",
+                location="top",
+                close_on_content_click=False,
+            ):
+                with v3.VCard(style="max-width: 360px;min-width: 360px;"):
+                    with v3.VCardItem(classes="py-1 px-2"):
+                        v3.VTextField(
+                            v_model="config.colormap_search",
+                            clearable=True,
+                            click_clear="config.colormap_search = null",
+                            placeholder=("config.colormap_preset",),
+                            single_line=True,
+                            variant="solo",
+                            density="compact",
+                            hide_details="auto",
+                            flat=True,
+                        )
+                    with v3.VCardItem(classes="py-1 mb-2"):
+                        v3.VNumberInput(
+                            v_model="config.colormap_n_colors",
+                            hide_details=True,
+                            density="compact",
+                            variant="outlined",
+                            flat=True,
+                            label="Number of colors",
+                            classes="mt-2",
+                            step=[1],
+                            min=[2],
+                            max=[255],
+                        )
+                    v3.VDivider()
+                    with v3.VList(density="compact", max_height="40vh"):
+                        with v3.VListItem(
+                            v_for="entry in style_editor_colormaps",
+                            key="entry.name",
+                            v_show=(
+                                "config.colormap_search?.length ? entry.name.toLowerCase().includes(config.colormap_search.toLowerCase()) : true",
+                            ),
+                            active=("config.colormap_preset === entry.name",),
+                            click="config.colormap_preset = entry.name; config.colormap_menu = false",
+                        ):
+                            html.Div(
+                                "{{ entry.name }}",
+                                classes="text-caption mb-1",
+                            )
+                            html.Div(
+                                style=[
+                                    f"`width:100%;{COLORMAP_ITEM_STYLE}background:${{entry.gradient}};`"
+                                ],
+                            )
+
             html.Div(
                 "{{ config.color_value_min }}",
                 classes="text-caption px-2 text-no-wrap",
             )
             with html.Div(
                 classes="w-100",
-                style="height:14px;border:1px solid #666;border-radius:4px;overflow:hidden;",
+                style=COLORMAP_ITEM_STYLE,
             ):
                 html.Div(
                     style=[
@@ -711,71 +812,3 @@ class StyleEditor:
             msg = "invalid color channel."
             raise ValueError(msg) from exc
         return [r, g, b, a]
-
-    @staticmethod
-    def _sanitize_n_colors(value):
-        try:
-            value = int(value)
-        except (TypeError, ValueError):
-            return DEFAULT_N_COLORS
-        return max(2, min(255, value))
-
-    @staticmethod
-    def _palette_name(value):
-        palette_name = str(value)
-        if palette_name in PALETTES:
-            return palette_name
-        return DEFAULT_PRESET
-
-    @staticmethod
-    def _palette_data(name):
-        palette = PALETTES.get(str(name), PALETTES[DEFAULT_PRESET])
-        if not palette:
-            return [(0, 0, 0), (255, 255, 255)]
-        return [tuple(color) for color in palette]
-
-    @classmethod
-    def _palette_gradient(cls, name, invert, n_colors, use_log_scale):
-        palette = cls._palette_data(name)
-        if invert:
-            palette = list(reversed(palette))
-        colors = cls._sample_palette(palette, cls._sanitize_n_colors(n_colors))
-        if len(colors) == 1:
-            r, g, b = colors[0]
-            return f"rgb({r}, {g}, {b})"
-
-        stops = []
-        for idx, (r, g, b) in enumerate(colors):
-            if use_log_scale:
-                offset = cls._log_offset(idx, len(colors))
-            else:
-                offset = (idx / (len(colors) - 1)) * 100.0
-            stops.append(f"rgb({r}, {g}, {b}) {offset:.4f}%")
-        return f"linear-gradient(90deg, {', '.join(stops)})"
-
-    @staticmethod
-    def _sample_palette(palette, n_colors):
-        if n_colors <= 1:
-            return [palette[0]]
-        if len(palette) == 1:
-            return [palette[0]] * n_colors
-
-        max_idx = len(palette) - 1
-        sampled = []
-        for i in range(n_colors):
-            t = (i / (n_colors - 1)) * max_idx
-            lo = math.floor(t)
-            hi = min(max_idx, lo + 1)
-            frac = t - lo
-            r = round((1 - frac) * palette[lo][0] + frac * palette[hi][0])
-            g = round((1 - frac) * palette[lo][1] + frac * palette[hi][1])
-            b = round((1 - frac) * palette[lo][2] + frac * palette[hi][2])
-            sampled.append((r, g, b))
-        return sampled
-
-    @staticmethod
-    def _log_offset(idx, count):
-        if count <= 1:
-            return 0.0
-        linear = idx / (count - 1)
-        return math.log10(1 + 9 * linear) * 100.0

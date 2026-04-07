@@ -1,4 +1,10 @@
-import numpy as np
+from fennil.app.viz.colormaps import (
+    DEFAULT_COLORMAP_NAME,
+    DEFAULT_N_COLORS,
+)
+from fennil.app.viz.colormaps import (
+    map_discrete_colors as _map_discrete_colors,
+)
 
 VELOCITY_SCALE = 1000
 VECTOR_ARROW_SIZE_FACTOR = 6
@@ -28,20 +34,6 @@ SLIP_COMPARE_SLOWER_COLOR = [214, 39, 40, 220]  # red
 SLIP_COMPARE_NEUTRAL_COLOR = [140, 140, 140, 220]
 
 
-# ColorBrewer RdBu[11] palette for discrete slip-rate coloring
-RDBU_11 = [
-    (5, 48, 97),
-    (33, 102, 172),
-    (67, 147, 195),
-    (146, 197, 222),
-    (209, 229, 240),
-    (247, 247, 247),
-    (253, 219, 199),
-    (244, 165, 130),
-    (214, 96, 77),
-    (178, 24, 43),
-    (103, 0, 31),
-]
 RED = [255, 0, 0, 255]
 BLACK = [0, 0, 0, 255]
 
@@ -51,30 +43,63 @@ COUPLING_MIN = -1.0
 COUPLING_MAX = 1.0
 
 
-def map_discrete_colors(values, value_min, value_max, palette):
-    colors_array = []
-    span = value_max - value_min
-    if span <= 0:
-        span = 1.0
-    for raw_value in values:
-        value = raw_value
-        if not np.isfinite(value):
-            value = 0.0
-        value = float(np.clip(value, value_min, value_max))
-        position = (value - value_min) / span
-        index = int(np.floor(position * len(palette)))
-        index = max(0, min(len(palette) - 1, index))
-        r, g, b = palette[index]
-        colors_array.append([r, g, b, 255])
-    return colors_array
+def map_discrete_colors(
+    values,
+    value_min,
+    value_max,
+    *,
+    palette_name=DEFAULT_COLORMAP_NAME,
+    n_colors=DEFAULT_N_COLORS,
+    alpha=255,
+    invert=False,
+):
+    return _map_discrete_colors(
+        values,
+        value_min=value_min,
+        value_max=value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        alpha=alpha,
+        invert=invert,
+    )
 
 
-def map_slip_colors(values, value_min=SLIP_RATE_MIN, value_max=SLIP_RATE_MAX):
-    return map_discrete_colors(values, value_min, value_max, RDBU_11)
+def map_slip_colors(
+    values,
+    value_min=SLIP_RATE_MIN,
+    value_max=SLIP_RATE_MAX,
+    *,
+    palette_name=DEFAULT_COLORMAP_NAME,
+    n_colors=DEFAULT_N_COLORS,
+    invert=False,
+):
+    return map_discrete_colors(
+        values,
+        value_min,
+        value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        invert=invert,
+    )
 
 
-def map_coupling_colors(values, value_min=COUPLING_MIN, value_max=COUPLING_MAX):
-    return map_discrete_colors(values, value_min, value_max, RDBU_11)
+def map_coupling_colors(
+    values,
+    value_min=COUPLING_MIN,
+    value_max=COUPLING_MAX,
+    *,
+    palette_name=DEFAULT_COLORMAP_NAME,
+    n_colors=DEFAULT_N_COLORS,
+    invert=False,
+):
+    return map_discrete_colors(
+        values,
+        value_min,
+        value_max,
+        palette_name=palette_name,
+        n_colors=n_colors,
+        invert=invert,
+    )
 
 
 def normalize_dataset_values(raw_values, default_values):

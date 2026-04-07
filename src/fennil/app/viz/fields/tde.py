@@ -1,5 +1,6 @@
 from fennil.app.io import Dataset
 from fennil.app.registry import FieldSpec, LayerContext
+from fennil.app.viz.colormaps import DEFAULT_N_COLORS, parse_colormap_range
 from fennil.app.viz.styles import SLIP_RATE_MAX, SLIP_RATE_MIN
 from fennil.app.viz.tde import tde_mesh_layers, tde_perimeter_layers
 
@@ -19,6 +20,7 @@ SPEC = FieldSpec(
             "palette": "RDBU_11",
             "min": SLIP_RATE_MIN,
             "max": SLIP_RATE_MAX,
+            "n_colors": DEFAULT_N_COLORS,
         },
     },
 )
@@ -29,13 +31,11 @@ def builder(name: str, ctx: LayerContext):
         return
 
     styles = ctx.specs[name].get("styles", {})
-    color_map_range = styles.get("color_map_range", {})
-    try:
-        value_min = float(color_map_range.get("min", SLIP_RATE_MIN))
-        value_max = float(color_map_range.get("max", SLIP_RATE_MAX))
-    except (TypeError, ValueError):
-        value_min = SLIP_RATE_MIN
-        value_max = SLIP_RATE_MAX
+    colormap = parse_colormap_range(
+        styles.get("color_map_range"),
+        default_min=SLIP_RATE_MIN,
+        default_max=SLIP_RATE_MAX,
+    )
 
     for idx, dataset in ctx.enabled_datasets(name):
         folder_number = idx + 1
@@ -53,8 +53,11 @@ def builder(name: str, ctx: LayerContext):
                     folder_number,
                     tde_df,
                     slip_values,
-                    value_min,
-                    value_max,
+                    colormap["min"],
+                    colormap["max"],
+                    palette_name=colormap["palette"],
+                    n_colors=colormap["n_colors"],
+                    invert=colormap["invert"],
                 )
             )
         ctx.tde_layers.extend(tde_perimeter_layers(folder_number, tde_perim_df))
