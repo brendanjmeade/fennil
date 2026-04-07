@@ -1,3 +1,5 @@
+import math
+
 from fennil.app.viz.colormaps import (
     DEFAULT_COLORMAP_NAME,
     DEFAULT_N_COLORS,
@@ -23,8 +25,6 @@ SLIP_WIDTH_MIN_PIXELS = 1
 SLIP_WIDTH_CAP_MM_PER_YR = 400.0
 SLIP_NEGATIVE_COLOR = [31, 119, 180, 220]  # tab:blue
 SLIP_POSITIVE_COLOR = [255, 127, 14, 220]  # tab:orange
-SLIP_NEGATIVE_EXTREME_COLOR = [25, 230, 255, 220]  # bright blue
-SLIP_POSITIVE_EXTREME_COLOR = [255, 40, 40, 220]  # bright red
 
 SLIP_COMPARE_MATCH_TOL_DEG = 1.0e-4
 SLIP_COMPARE_WIDTH_SCALE = SLIP_WIDTH_SCALE * 128
@@ -128,3 +128,13 @@ def dataset_float_value(two_values, dataset_index, fallback):
         return float(raw_value)
     except (TypeError, ValueError):
         return float(fallback)
+
+
+def nonnegative_float(value, fallback=1.0):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return float(fallback)
+    if not math.isfinite(parsed):
+        return float(fallback)
+    return max(0.0, parsed)

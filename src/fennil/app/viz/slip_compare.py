@@ -11,6 +11,7 @@ from .styles import (
     SLIP_COMPARE_SLOWER_COLOR,
     SLIP_COMPARE_WIDTH_MIN_PIXELS,
     SLIP_COMPARE_WIDTH_SCALE,
+    nonnegative_float,
 )
 
 REQUIRED_SLIP_COMPARE_COLS = {
@@ -24,8 +25,18 @@ REQUIRED_SLIP_COMPARE_COLS = {
 }
 
 
-def slip_compare_layers(right_dataset, left_dataset, slip_type, velocity_scale):
+def slip_compare_layers(
+    right_dataset,
+    left_dataset,
+    slip_type,
+    velocity_scale,
+    *,
+    positive_color=SLIP_COMPARE_FASTER_COLOR,
+    negative_color=SLIP_COMPARE_SLOWER_COLOR,
+    segment_scale=1.0,
+):
     velocity_scale = 1.0 if velocity_scale is None else float(velocity_scale)
+    segment_scale = nonnegative_float(segment_scale)
 
     right_df = _segment_slip_frame(right_dataset.segment, slip_type)
     left_df = _segment_slip_frame(left_dataset.segment, slip_type)
@@ -45,8 +56,10 @@ def slip_compare_layers(right_dataset, left_dataset, slip_type, velocity_scale):
                 "start_lat": shared["start_lat_right"].to_numpy(),
                 "end_lon": shared["end_lon_right"].to_numpy(),
                 "end_lat": shared["end_lat_right"].to_numpy(),
-                "line_width": np.abs(diff),
-                "color": [_diff_color(value) for value in diff],
+                "line_width": np.abs(diff) * segment_scale,
+                "color": [
+                    _diff_color(value, positive_color, negative_color) for value in diff
+                ],
             }
         )
         shared_df["tooltip"] = [
@@ -74,8 +87,18 @@ def slip_compare_layers(right_dataset, left_dataset, slip_type, velocity_scale):
             )
         )
 
-    unmatched_right = _unmatched_segments_df(right_df, shared_keys, "right")
-    unmatched_left = _unmatched_segments_df(left_df, shared_keys, "left")
+    unmatched_right = _unmatched_segments_df(
+        right_df,
+        shared_keys,
+        "right",
+        segment_scale=segment_scale,
+    )
+    unmatched_left = _unmatched_segments_df(
+        left_df,
+        shared_keys,
+        "left",
+        segment_scale=segment_scale,
+    )
     unmatched_df = pd.concat((unmatched_right, unmatched_left), ignore_index=True)
     if not unmatched_df.empty:
         layers.extend(
@@ -172,7 +195,7 @@ def _unordered_pair_key(endpoint_a, endpoint_b):
     return f"{endpoint_b}:{endpoint_a}"
 
 
-def _unmatched_segments_df(source_df, shared_keys, model_name):
+def _unmatched_segments_df(source_df, shared_keys, model_name, *, segment_scale):
     if source_df.empty:
         return pd.DataFrame()
 
@@ -180,7 +203,7 @@ def _unmatched_segments_df(source_df, shared_keys, model_name):
     if unmatched.empty:
         return pd.DataFrame()
 
-    unmatched["line_width"] = float(FAULT_PROJ_LINE_WIDTH)
+    unmatched["line_width"] = float(FAULT_PROJ_LINE_WIDTH) * segment_scale
     unmatched["color"] = [SLIP_COMPARE_NEUTRAL_COLOR] * len(unmatched)
     unmatched["tooltip"] = [
         _unmatched_tooltip(model_name, name, slip)
@@ -213,11 +236,11 @@ def _segment_slip_values(segment, slip_type):
     return np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-def _diff_color(diff_rate):
+def _diff_color(diff_rate, positive_color, negative_color):
     if diff_rate > 0:
-        return SLIP_COMPARE_FASTER_COLOR
+        return positive_color
     if diff_rate < 0:
-        return SLIP_COMPARE_SLOWER_COLOR
+        return negative_color
     return SLIP_COMPARE_NEUTRAL_COLOR
 
 

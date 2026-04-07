@@ -6,12 +6,11 @@ from fennil.app.deck.primitives import line_layers, polygon_layers
 from .styles import (
     FAULT_PROJ_LINE_WIDTH,
     SLIP_NEGATIVE_COLOR,
-    SLIP_NEGATIVE_EXTREME_COLOR,
     SLIP_POSITIVE_COLOR,
-    SLIP_POSITIVE_EXTREME_COLOR,
     SLIP_WIDTH_CAP_MM_PER_YR,
     SLIP_WIDTH_MIN_PIXELS,
     SLIP_WIDTH_SCALE,
+    nonnegative_float,
 )
 from .tooltips import format_segment_tooltip
 
@@ -82,8 +81,13 @@ def segment_slip_layers(
     seg_tooltip_enabled,
     fault_lines_df,
     velocity_scale=1.0,
+    *,
+    positive_color=SLIP_POSITIVE_COLOR,
+    negative_color=SLIP_NEGATIVE_COLOR,
+    segment_scale=1.0,
 ):
     velocity_scale = 1.0 if velocity_scale is None else float(velocity_scale)
+    segment_scale = nonnegative_float(segment_scale)
 
     if seg_slip_type == "ss":
         slip_values = segment.model_strike_slip_rate.to_numpy()
@@ -103,18 +107,15 @@ def segment_slip_layers(
             "end_lon": segment.lon2.to_numpy(),
             "end_lat": segment.lat2.to_numpy(),
             "slip_rate": slip_values,
-            "line_width": np.clip(np.abs(slip_values), 0.0, SLIP_WIDTH_CAP_MM_PER_YR),
+            "line_width": np.clip(np.abs(slip_values), 0.0, SLIP_WIDTH_CAP_MM_PER_YR)
+            * segment_scale,
         }
     )
 
     def _slip_color(value):
-        if value < -SLIP_WIDTH_CAP_MM_PER_YR:
-            return SLIP_NEGATIVE_EXTREME_COLOR
-        if value > SLIP_WIDTH_CAP_MM_PER_YR:
-            return SLIP_POSITIVE_EXTREME_COLOR
         if value < 0:
-            return SLIP_NEGATIVE_COLOR
-        return SLIP_POSITIVE_COLOR
+            return negative_color
+        return positive_color
 
     seg_lines_df["color"] = [_slip_color(value) for value in slip_values]
     if seg_tooltip_enabled and "tooltip" in fault_lines_df.columns:

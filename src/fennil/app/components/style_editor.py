@@ -25,10 +25,12 @@ COUPLING_COLORMAP_STEP = 0.01
 COUPLING_COLORMAP_PRECISION = 2
 COLOR_STYLE_GROUPS = (
     ("colors", "Color"),
+    ("colors_negative", "Negative"),
+    ("colors_positive", "Positive"),
     ("fill", "Fill"),
     ("line", "Line"),
 )
-DATASET_GRID_STYLE = "`display:grid;grid-template-columns:repeat(${config.show_left_column ? 2 : 1}, minmax(0, 1fr));`"
+DATASET_GRID_STYLE = "`display:grid;grid-template-columns:repeat(${config.show_dual_column ? 2 : 1}, minmax(0, 1fr));`"
 DATASET_CARD_STYLE = "border: 1px solid rgba(127,127,127,0.35); border-radius: 8px;"
 MINMAX_GRID_STYLE = "display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);"
 DRAWER_LAYOUT_STYLE = "height:100%;display:flex;flex-direction:column;"
@@ -51,18 +53,25 @@ class ColorMapControl(StateDataModel):
 
     right_label: str = "Right"
     left_label: str = "Left"
-    show_left_column: bool = False
+    show_dual_column: bool = False
 
     has_colors: bool = False
+    has_colors_negative: bool = False
+    has_colors_positive: bool = False
     has_fill: bool = False
     has_line: bool = False
     has_line_width: bool = False
     has_colormap: bool = False
+    has_segment_scale: bool = False
     colormap_menu: bool = False
     colormap_search: str = ""
 
     colors_0_hexa: str = DEFAULT_PICKER_HEXA
     colors_1_hexa: str = DEFAULT_PICKER_HEXA
+    colors_negative_0_hexa: str = DEFAULT_PICKER_HEXA
+    colors_negative_1_hexa: str = DEFAULT_PICKER_HEXA
+    colors_positive_0_hexa: str = DEFAULT_PICKER_HEXA
+    colors_positive_1_hexa: str = DEFAULT_PICKER_HEXA
     fill_0_hexa: str = DEFAULT_PICKER_HEXA
     fill_1_hexa: str = DEFAULT_PICKER_HEXA
     line_0_hexa: str = DEFAULT_PICKER_HEXA
@@ -72,6 +81,8 @@ class ColorMapControl(StateDataModel):
     line_width_1_value: float = 1.0
     line_width_0_valid: bool = True
     line_width_1_valid: bool = True
+    segment_scale_value: float = 1.0
+    segment_scale_valid: bool = True
 
     color_value_min: float = 0.0
     color_value_max: float = 1.0
@@ -176,6 +187,9 @@ class StyleEditor:
                 continue
             self._build_color_group(key, label)
 
+        if control.has_segment_scale:
+            self._build_segment_scale_group()
+
         if control.has_line_width:
             self._build_line_width_group()
 
@@ -197,7 +211,7 @@ class StyleEditor:
             self._build_color_card(
                 hexa_attr=f"{key}_1_hexa",
                 label="{{ config.left_label }}",
-                v_show="config.show_left_column",
+                v_show="config.show_dual_column",
             )
             self._build_color_card(
                 hexa_attr=f"{key}_0_hexa",
@@ -214,12 +228,30 @@ class StyleEditor:
                 value_attr="line_width_1_value",
                 valid_attr="line_width_1_valid",
                 label="{{ config.left_label }}",
-                v_show="config.show_left_column",
+                v_show="config.show_dual_column",
             )
             self._build_width_card(
                 value_attr="line_width_0_value",
                 valid_attr="line_width_0_valid",
                 label="{{ config.right_label }}",
+            )
+
+    def _build_segment_scale_group(self):
+        html.Div("Segment scale", classes="text-caption mb-1")
+        with html.Div(classes="mb-2"):
+            v3.VNumberInput(
+                v_model="config.segment_scale_value",
+                label="Width multiplier",
+                density="compact",
+                hide_details=True,
+                variant="outlined",
+                control_variant="split",
+                classes="mt-2",
+                min=[0],
+                step=[0.1],
+                precision=[2],
+                error=("!config.segment_scale_valid",),
+                style="max-width: 220px;",
             )
 
     def _build_colormap_group(self):
@@ -370,6 +402,19 @@ class StyleEditor:
                     return
                 styles[key] = [value_0, value_1]
 
+            if control.has_segment_scale:
+                if not control.segment_scale_valid:
+                    self._state.style_editor_error = (
+                        f"{field_name}.segment_scale must be numeric."
+                    )
+                    return
+                if float(control.segment_scale_value) < 0:
+                    self._state.style_editor_error = (
+                        f"{field_name}.segment_scale must be >= 0."
+                    )
+                    return
+                styles["segment_scale"] = float(control.segment_scale_value)
+
             if control.has_line_width:
                 if not control.line_width_0_valid:
                     self._state.style_editor_error = (
@@ -465,6 +510,15 @@ class StyleEditor:
             eager=True,
         )
         control.watch(
+            ["segment_scale_value"],
+            lambda segment_scale, name=field_name: self._segment_scale_str_to_float(
+                name,
+                segment_scale,
+            ),
+            sync=True,
+            eager=True,
+        )
+        control.watch(
             ["colormap_preset", "colormap_n_colors"],
             lambda preset, n_colors, name=field_name: self._sync_colormap_preview(
                 name,
@@ -482,13 +536,21 @@ class StyleEditor:
         control.icon_color = str(styles.get("icon_color") or "")
 
         right_label, left_label, show_left_column = self._dataset_labels()
+        pair_labels = styles.get("pair_labels")
+        if isinstance(pair_labels, list | tuple) and len(pair_labels) >= 2:
+            right_label = str(pair_labels[0] or right_label)
+            left_label = str(pair_labels[1] or left_label)
+            control.show_dual_column = True
+        else:
+            control.show_dual_column = show_left_column
         control.right_label = right_label
         control.left_label = left_label
-        control.show_left_column = show_left_column
+        control.show_dual_column = bool(control.show_dual_column)
 
         for key, _ in COLOR_STYLE_GROUPS:
             self._load_color_group(control, key, styles)
 
+        self._load_segment_scale_group(control, styles)
         self._load_line_width_group(control, styles)
         self._load_colormap_group(control, field_name, styles)
 
@@ -517,6 +579,14 @@ class StyleEditor:
         control.line_width_1_value = value_1
         control.line_width_0_valid = True
         control.line_width_1_valid = True
+
+    def _load_segment_scale_group(self, control, styles):
+        has_group = "segment_scale" in styles
+        control.has_segment_scale = has_group
+        if not has_group:
+            return
+        control.segment_scale_value = self._to_float(styles.get("segment_scale"), 1.0)
+        control.segment_scale_valid = True
 
     def _load_colormap_group(self, control, field_name, styles):
         color_map_range = styles.get("color_map_range")
@@ -607,6 +677,15 @@ class StyleEditor:
         if parsed_1 is not None:
             control.line_width_1_value = parsed_1
 
+    def _segment_scale_str_to_float(self, field_name, segment_scale):
+        control = self._controls.get(field_name)
+        if control is None:
+            return
+        parsed = self._parse_finite_float(segment_scale)
+        control.segment_scale_valid = parsed is not None
+        if parsed is not None:
+            control.segment_scale_value = parsed
+
     def _color_range_str_to_float(self, field_name, color_value_min, color_value_max):
         control = self._controls.get(field_name)
         if control is None:
@@ -669,6 +748,7 @@ class StyleEditor:
             control.has_colors
             or control.has_fill
             or control.has_line
+            or control.has_segment_scale
             or control.has_line_width
             or control.has_colormap
         )
