@@ -7,7 +7,7 @@ from trame_dataclass.core import get_instance
 
 from fennil.app.io import load_folder_data
 
-from .components import FileBrowser, Scale, StyleEditor
+from .components import FileBrowser, Footer, Scale, StyleEditor
 from .deck import build_deck, mapbox
 from .registry import FIELD_REGISTRY, LayerContext
 from .state import DatasetVisualization, MapSettings
@@ -42,6 +42,7 @@ class FennilApp(TrameApp):
         field_specs[FAULT_LINES_STYLE_KEY] = fault_line_style_spec()
         self.state.field_specs = field_specs
         self.style_editor = StyleEditor(self, self._datasets)
+        self.footer = Footer(self, self._datasets)
 
         # build ui
         self._build_ui()
@@ -57,8 +58,10 @@ class FennilApp(TrameApp):
         )
         build_fault_lines(ctx)
         FIELD_REGISTRY.build_layers(ctx)
+        footer_colormaps = self.footer.build_entries(self.state.field_specs)
 
         with self.state:
+            self.state.footer_colormaps = footer_colormaps
             self.ctrl.deck_update(build_deck(ctx.all_layers, self.map_params))
 
     def load_dataset(self, directory_path):
@@ -344,28 +347,4 @@ class FennilApp(TrameApp):
             # Footer
             # -----------------------------------------------------------------
 
-            with v3.VFooter(app=True, height=35):
-                # Slip rate colorbar placeholder
-                html.Div(
-                    "Slip rate (mm/yr): -100 ←→ +100",
-                    style="font-size: 0.75rem; color: #666;",
-                )
-                # Residual magnitude colorbar placeholder
-                html.Div(
-                    "Resid. mag. (mm/yr): 0 → 5",
-                    style="font-size: 0.75rem; color: #666;",
-                )
-                # Residual diff colorbar placeholder
-                html.Div(
-                    "Resid. diff. (mm/yr): -5 ←→ +5",
-                    style="font-size: 0.75rem; color: #666;",
-                )
-                if self.server.hot_reload:
-                    v3.VSpacer()
-                    v3.VBtn(
-                        icon="mdi-refresh",
-                        click=self.ctrl.on_server_reload,
-                        density="compact",
-                        classes="rounded",
-                        flat=True,
-                    )
+            self.footer.build_ui()
