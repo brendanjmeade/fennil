@@ -15,10 +15,10 @@ FILE_BROWSER_HEADERS = [
 class FileBrowserState(StateDataModel):
     show: bool = False
     current: str = "/"
-    listing: list
+    listing: list[dict[str, str | int]] = list
     active: int = -1
-    error: str | None
-    headers: list = FILE_BROWSER_HEADERS
+    error: str | None = None
+    headers: list[dict[str, str | bool]] = lambda: list(FILE_BROWSER_HEADERS)
 
 
 class FileBrowser(dataclass.Provider):
