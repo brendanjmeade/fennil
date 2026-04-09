@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-04-09)
+
+### Bug Fixes
+
+- Add style editing for slip/slip compare
+  ([`434cad4`](https://github.com/brendanjmeade/fennil/commit/434cad4906c2b08ecc6d872f1c216e8e13a8df97))
+
+- Remove warning on launch
+  ([`2aec9a2`](https://github.com/brendanjmeade/fennil/commit/2aec9a241999f72b5d2678cc3c710dabcb61de11))
+
+- **style-editor**: Fix style controls and UI
+  ([`91374be`](https://github.com/brendanjmeade/fennil/commit/91374be410347ee9b96e342ebf12c200e1e0eff1))
+
+### Features
+
+- Add configurable color maps
+  ([`967f134`](https://github.com/brendanjmeade/fennil/commit/967f134453d95772158d05400e561462b98c9f49))
+
+- Add footer
+  ([`c7cd692`](https://github.com/brendanjmeade/fennil/commit/c7cd69254ab29d98b8dabbd8346b2f4047fe86a5))
+
+- **map**: Add high contrast map style (with topography & barymetry)
+  ([`cb7710a`](https://github.com/brendanjmeade/fennil/commit/cb7710a367d61048f99850d9a1ad5a848f715534))
+
+
 ## v1.5.1 (2026-04-03)
 
 ### Bug Fixes
