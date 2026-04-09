@@ -62,7 +62,14 @@ class FennilApp(TrameApp):
 
         with self.state:
             self.state.footer_colormaps = footer_colormaps
-            self.ctrl.deck_update(build_deck(ctx.all_layers, self.map_params))
+            include_map_style = not any(viz.enabled for viz in self._datasets)
+            self.ctrl.deck_update(
+                build_deck(
+                    ctx.all_layers,
+                    self.map_params,
+                    include_map_style=include_map_style,
+                )
+            )
 
     def load_dataset(self, directory_path):
         self.state.compact_drawer = False  # Always open when new data
@@ -341,7 +348,9 @@ class FennilApp(TrameApp):
                     classes="fill-height",
                 )
                 self.ctrl.deck_update = deck_map.update
-                self.ctrl.deck_update(build_deck([], self.map_params))
+                self.ctrl.deck_update(
+                    build_deck([], self.map_params, include_map_style=True)
+                )
 
             # -----------------------------------------------------------------
             # Footer
