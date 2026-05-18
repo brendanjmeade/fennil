@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-05-18)
+
+### Bug Fixes
+
+- Complete trame-dataclass v2 migration
+  ([`4494ab6`](https://github.com/brendanjmeade/fennil/commit/4494ab675a52c41f970166975769ffa10c70de9a))
+
+- Linmit versions
+  ([`e9e204a`](https://github.com/brendanjmeade/fennil/commit/e9e204a6a6aa6eeb1e9ba8811ed4abe92379f673))
+
+### Continuous Integration
+
+- Fix trame-vuetify version
+  ([`4a9069e`](https://github.com/brendanjmeade/fennil/commit/4a9069ecae2d224ae9e9618fda44f0f70dcf63e1))
+
+### Features
+
+- **dataclass**: Update to v2
+  ([`29ca8f1`](https://github.com/brendanjmeade/fennil/commit/29ca8f1d5eca7542316d6d0142942f8e3a6d8ecd))
+
+
 ## v1.6.0 (2026-04-09)
 
 ### Bug Fixes
