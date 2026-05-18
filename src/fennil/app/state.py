@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from trame_dataclass.core import StateDataModel
+from trame.app import dataclass
 
+from fennil.app.io import Dataset
 from fennil.app.registry import FIELD_REGISTRY
 
 DEFAULT_VIEW_STATE = {
@@ -13,22 +14,23 @@ DEFAULT_VIEW_STATE = {
 }
 
 
-class MapSettings(StateDataModel):
-    latitude: float = DEFAULT_VIEW_STATE["latitude"]
-    longitude: float = DEFAULT_VIEW_STATE["longitude"]
-    zoom: float = DEFAULT_VIEW_STATE["zoom"]
-    pitch: float = DEFAULT_VIEW_STATE["pitch"]
-    bearing: float = DEFAULT_VIEW_STATE["bearing"]
+class MapSettings(dataclass.StateDataModel):
+    latitude = dataclass.Sync(float, DEFAULT_VIEW_STATE["latitude"])
+    longitude = dataclass.Sync(float, DEFAULT_VIEW_STATE["longitude"])
+    zoom = dataclass.Sync(float, DEFAULT_VIEW_STATE["zoom"])
+    pitch = dataclass.Sync(float, DEFAULT_VIEW_STATE["pitch"])
+    bearing = dataclass.Sync(float, DEFAULT_VIEW_STATE["bearing"])
 
 
-class DatasetVisualization(StateDataModel):
-    enabled: bool = False
-    name: str
-    fields: dict[str, bool | str | None]
-    available_fields: list[str]
+class DatasetVisualization(dataclass.StateDataModel):
+    enabled = dataclass.Sync(bool, False)
+    name = dataclass.Sync(str, "")
+    fields = dataclass.Sync(dict[str, bool | str | None], dict)
+    available_fields = dataclass.Sync(list[str], list)
+    data = dataclass.ServerOnly(Dataset)
 
     def attach_data(self, directory_path, data):
-        self._data = data
+        self.data = data
         self.name = ""
         self.enabled = bool(data)
         if data:
@@ -36,17 +38,13 @@ class DatasetVisualization(StateDataModel):
             self.available_fields = FIELD_REGISTRY.available_fields(data)
             self.fields = FIELD_REGISTRY.field_defaults()
 
-    @property
-    def data(self):
-        return getattr(self, "_data", None)
-
     def clear(self):
         self.enabled = False
         self.fields = {}
         self.available_fields = []
 
     def adopt(self, other):
-        self._data = other.data
+        self.data = other.data
         self.name = other.name
         self.enabled = other.enabled
         self.fields = dict(other.fields)
