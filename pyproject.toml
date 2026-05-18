@@ -8,7 +8,7 @@ authors = [
 ]
 dependencies = [
     "trame>=3.13.2,<4",
-    "trame-vuetify>3.2.2,<4",
+    "trame-vuetify>=3.2.2,<4",
     "trame-deckgl>=2.0.4,<3",
     "trame-dataclass>=2.0.6,<3",
     "pydeck",
