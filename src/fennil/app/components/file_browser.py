@@ -1,8 +1,9 @@
 from pathlib import Path
 
-from trame.widgets import dataclass, html
+from trame.app import dataclass
+from trame.widgets import dataclass as dc
+from trame.widgets import html
 from trame.widgets import vuetify3 as v3
-from trame_dataclass.core import StateDataModel
 
 from fennil.app.io import is_valid_data_folder
 
@@ -12,16 +13,18 @@ FILE_BROWSER_HEADERS = [
 ]
 
 
-class FileBrowserState(StateDataModel):
-    show: bool = False
-    current: str = "/"
-    listing: list[dict[str, str | int]] = list
-    active: int = -1
-    error: str | None = None
-    headers: list[dict[str, str | bool]] = lambda: list(FILE_BROWSER_HEADERS)
+class FileBrowserState(dataclass.StateDataModel):
+    show = dataclass.Sync(bool, False)
+    current = dataclass.Sync(str, "/")
+    listing = dataclass.Sync(list[dict[str, str | int]], list)
+    active = dataclass.Sync(int, -1)
+    error = dataclass.Sync(str | None, None)
+    headers = dataclass.Sync(
+        list[dict[str, str | bool]], lambda: list(FILE_BROWSER_HEADERS)
+    )
 
 
-class FileBrowser(dataclass.Provider):
+class FileBrowser(dc.Provider):
     def __init__(self, current_directory=None, on_open=None, **kwargs):
         if current_directory is None:
             current_directory = Path.cwd()

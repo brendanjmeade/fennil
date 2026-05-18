@@ -1,9 +1,9 @@
 import copy
 import math
 
+from trame.app import dataclass
 from trame.widgets import html
 from trame.widgets import vuetify3 as v3
-from trame_dataclass.core import StateDataModel, get_instance
 
 from fennil.app.viz.colormaps import (
     DEFAULT_COLORMAP_NAME,
@@ -45,58 +45,60 @@ COLORMAP_ITEM_STYLE = (
 )
 
 
-class ColorMapControl(StateDataModel):
-    field_name: str
-    label: str
-    icon: str
-    icon_color: str
+class ColorMapControl(dataclass.StateDataModel):
+    field_name = dataclass.Sync(str, "")
+    label = dataclass.Sync(str, "")
+    icon = dataclass.Sync(str, "")
+    icon_color = dataclass.Sync(str, "")
 
-    right_label: str = "Right"
-    left_label: str = "Left"
-    show_dual_column: bool = False
+    right_label = dataclass.Sync(str, "Right")
+    left_label = dataclass.Sync(str, "Left")
+    show_dual_column = dataclass.Sync(bool, False)
 
-    has_colors: bool = False
-    has_colors_negative: bool = False
-    has_colors_positive: bool = False
-    has_fill: bool = False
-    has_line: bool = False
-    has_line_width: bool = False
-    has_colormap: bool = False
-    has_segment_scale: bool = False
-    colormap_menu: bool = False
-    colormap_search: str = ""
+    has_colors = dataclass.Sync(bool, False)
+    has_colors_negative = dataclass.Sync(bool, False)
+    has_colors_positive = dataclass.Sync(bool, False)
+    has_fill = dataclass.Sync(bool, False)
+    has_line = dataclass.Sync(bool, False)
+    has_line_width = dataclass.Sync(bool, False)
+    has_colormap = dataclass.Sync(bool, False)
+    has_segment_scale = dataclass.Sync(bool, False)
+    colormap_menu = dataclass.Sync(bool, False)
+    colormap_search = dataclass.Sync(str, "")
 
-    colors_0_hexa: str = DEFAULT_PICKER_HEXA
-    colors_1_hexa: str = DEFAULT_PICKER_HEXA
-    colors_negative_0_hexa: str = DEFAULT_PICKER_HEXA
-    colors_negative_1_hexa: str = DEFAULT_PICKER_HEXA
-    colors_positive_0_hexa: str = DEFAULT_PICKER_HEXA
-    colors_positive_1_hexa: str = DEFAULT_PICKER_HEXA
-    fill_0_hexa: str = DEFAULT_PICKER_HEXA
-    fill_1_hexa: str = DEFAULT_PICKER_HEXA
-    line_0_hexa: str = DEFAULT_PICKER_HEXA
-    line_1_hexa: str = DEFAULT_PICKER_HEXA
+    colors_0_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    colors_1_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    colors_negative_0_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    colors_negative_1_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    colors_positive_0_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    colors_positive_1_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    fill_0_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    fill_1_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    line_0_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
+    line_1_hexa = dataclass.Sync(str, DEFAULT_PICKER_HEXA)
 
-    line_width_0_value: float = 1.0
-    line_width_1_value: float = 1.0
-    line_width_0_valid: bool = True
-    line_width_1_valid: bool = True
-    segment_scale_value: float = 1.0
-    segment_scale_valid: bool = True
+    line_width_0_value = dataclass.Sync(float, 1.0)
+    line_width_1_value = dataclass.Sync(float, 1.0)
+    line_width_0_valid = dataclass.Sync(bool, True)
+    line_width_1_valid = dataclass.Sync(bool, True)
+    segment_scale_value = dataclass.Sync(float, 1.0)
+    segment_scale_valid = dataclass.Sync(bool, True)
 
-    color_value_min: float = 0.0
-    color_value_max: float = 1.0
-    color_value_min_valid: bool = True
-    color_value_max_valid: bool = True
-    colormap_preset: str = DEFAULT_PRESET
-    colormap_n_colors: int = DEFAULT_N_COLORS
-    colormap_invert: bool = False
-    colormap_use_log_scale: bool = False
-    color_value_precision: int = DEFAULT_COLORMAP_PRECISION
-    color_value_step: float = DEFAULT_COLORMAP_STEP
-    color_range_min: float = DEFAULT_COLOR_RANGE[0]
-    color_range_max: float = DEFAULT_COLOR_RANGE[1]
-    lut_gradient: str = "linear-gradient(90deg, rgb(0,0,0), rgb(255,255,255))"
+    color_value_min = dataclass.Sync(float, 0.0)
+    color_value_max = dataclass.Sync(float, 1.0)
+    color_value_min_valid = dataclass.Sync(bool, True)
+    color_value_max_valid = dataclass.Sync(bool, True)
+    colormap_preset = dataclass.Sync(str, DEFAULT_PRESET)
+    colormap_n_colors = dataclass.Sync(int, DEFAULT_N_COLORS)
+    colormap_invert = dataclass.Sync(bool, False)
+    colormap_use_log_scale = dataclass.Sync(bool, False)
+    color_value_precision = dataclass.Sync(int, DEFAULT_COLORMAP_PRECISION)
+    color_value_step = dataclass.Sync(float, DEFAULT_COLORMAP_STEP)
+    color_range_min = dataclass.Sync(float, DEFAULT_COLOR_RANGE[0])
+    color_range_max = dataclass.Sync(float, DEFAULT_COLOR_RANGE[1])
+    lut_gradient = dataclass.Sync(
+        str, "linear-gradient(90deg, rgb(0,0,0), rgb(255,255,255))"
+    )
 
 
 class StyleEditor:
@@ -473,7 +475,7 @@ class StyleEditor:
         )
         self._state.style_editor_picker_hexa = hexa_value
 
-        control = get_instance(control_id)
+        control = dataclass.get_instance(control_id)
         if control is None or not field_name:
             return
         if not hasattr(control, field_name):
@@ -490,12 +492,12 @@ class StyleEditor:
         )
         control.watch(
             ["color_value_min", "color_value_max"],
-            lambda value_min,
-            value_max,
-            name=field_name: self._color_range_str_to_float(
-                name,
-                value_min,
-                value_max,
+            lambda value_min, value_max, name=field_name: (
+                self._color_range_str_to_float(
+                    name,
+                    value_min,
+                    value_max,
+                )
             ),
             sync=True,
         )
