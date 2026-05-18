@@ -1,9 +1,8 @@
-from trame.app import TrameApp
+from trame.app import TrameApp, dataclass
 from trame.decorators import change
 from trame.ui.vuetify3 import VAppLayout
 from trame.widgets import deckgl, html
 from trame.widgets import vuetify3 as v3
-from trame_dataclass.core import get_instance
 
 from fennil.app.io import load_folder_data
 
@@ -89,10 +88,18 @@ class FennilApp(TrameApp):
         self._datasets[index].clear()
         self.style_editor.refresh()
 
-    def update_dataset_config(self, id, name, value):
+    def update_dataset_config(self, state_id, name, value):
         """Keep server in sync with client reactive nested structure"""
-        state = get_instance(id)
-        state.fields = {**state.fields, name: value}
+        state = dataclass.get_instance(state_id)
+        if state is None:
+            for dataset in self._datasets:
+                if dataset._id == state_id:
+                    state = dataset
+                    break
+        if state is None:
+            return
+
+        state.fields = {**(state.fields or {}), name: value}
 
     def _build_ui(self, **_):
         self.state.trame__title = "Earthquake Data Viewer"
