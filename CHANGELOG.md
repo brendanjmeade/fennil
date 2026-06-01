@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.7.1 (2026-06-01)
+
+### Bug Fixes
+
+- Allow datasets to be reloaded
+  ([`e365e5d`](https://github.com/brendanjmeade/fennil/commit/e365e5d37cefe4f266368238ddab8178b0f04ceb))
+
+
 ## v1.7.0 (2026-05-18)
 
 ### Bug Fixes
