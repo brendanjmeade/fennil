@@ -27,19 +27,21 @@ class DatasetVisualization(dataclass.StateDataModel):
     name = dataclass.Sync(str, "")
     fields = dataclass.Sync(dict[str, bool | str | None], dict)
     available_fields = dataclass.Sync(list[str], list)
-    data = dataclass.ServerOnly(Dataset)
+    data = dataclass.ServerOnly(Dataset | None)
 
     def attach_data(self, directory_path, data):
         self.data = data
         self.name = ""
-        self.enabled = bool(data)
-        if data:
+        self.enabled = data is not None
+        if data is not None:
             self.name = Path(directory_path).stem.lstrip("0")
             self.available_fields = FIELD_REGISTRY.available_fields(data)
             self.fields = FIELD_REGISTRY.field_defaults()
 
     def clear(self):
+        self.data = None
         self.enabled = False
+        self.name = ""
         self.fields = {}
         self.available_fields = []
 
