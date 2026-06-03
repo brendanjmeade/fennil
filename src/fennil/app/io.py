@@ -18,7 +18,7 @@ from fennil.app.geo_projs import (
 PROJ_MESH_DIP_THRESHOLD_DEG = 75.0
 
 
-@dataclass
+@dataclass(eq=False)
 class Dataset:
     station: pd.DataFrame
     segment: pd.DataFrame
