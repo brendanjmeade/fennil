@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.7.2 (2026-06-03)
+
+### Bug Fixes
+
+- Fix right-dataset deletion bug
+  ([`17496ff`](https://github.com/brendanjmeade/fennil/commit/17496ff9a142fc51b3c3c3ae5cc2d359e0e3e030))
+
+
 ## v1.7.1 (2026-06-01)
 
 ### Bug Fixes
